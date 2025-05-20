@@ -1,0 +1,17 @@
+{
+  "name": "projecthub-tic-tac-toe-socket-server",
+  "version": "1.0.0",
+  "description": "Dedicated Socket.IO server for the Tic Tac Toe game in ProjectHub.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

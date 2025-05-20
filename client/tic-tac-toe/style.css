@@ -1,0 +1,106 @@
+/* tic-tac-toe/client/style.css */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain; 
+    /* Tailwind CSS 的 bg-gray-100 和 text-gray-800 已在 body class 中设置 */
+}
+
+/* 棋盘格子 */
+.game-cell {
+    aspect-ratio: 1 / 1;
+    font-size: clamp(2.8rem, 11vw, 4.5rem); /* 响应式字体大小，确保O/X足够大 */
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    touch-action: manipulation;
+    line-height: 1; /* 改善单字符垂直居中 */
+    /* border, bg, rounded, shadow 由 Tailwind class 控制 (在HTML中) */
+}
+
+.game-cell:hover:not(.occupied) {
+    background-color: rgba(59, 130, 246, 0.1); /* Tailwind: hover:bg-blue-100/50 */
+}
+.game-cell.occupied {
+    cursor: not-allowed;
+}
+
+/* 玩家棋子颜色 (这些也可以通过Tailwind类直接在JS中添加/移除到.game-cell上) */
+.player-x {
+    color: #3b82f6; /* Tailwind: text-blue-600 */
+}
+.player-o {
+    color: #ef4444; /* Tailwind: text-red-500 */
+}
+
+
+/* 棋盘网格 */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 每列等宽，格子宽度将平分 */
+    gap: 5px; /* 格子间距，也可以用Tailwind的gap-1, gap-1.5, gap-2等 */
+    /* max-width 和 mx-auto 由 Tailwind class 在 HTML 中控制 */
+    background-color: #d1d5db; /* Tailwind: bg-gray-300 - 棋盘背景色 */
+    padding: 5px; /* Tailwind: p-1 or p-1.5 */
+    border-radius: 0.375rem; /* Tailwind: rounded-md */
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Tailwind: shadow-md */
+}
+
+/* 隐藏类 (Tailwind的hidden类通常已经够用，这里确保其优先级) */
+.hidden {
+    display: none !important;
+}
+
+/* 动画 */
+.fade-in {
+    animation: fadeInAnimation 0.4s ease-out forwards; /* 改名避免与Tailwind冲突 */
+}
+@keyframes fadeInAnimation {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.pulse { 
+    animation: pulseAnimationEffect 1.8s infinite cubic-bezier(0.4, 0, 0.6, 1); /* 改名 */
+}
+@keyframes pulseAnimationEffect {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
+/* 确保按钮和输入框在移动设备上易于点击 */
+button, input[type="text"], input[type="button"] {
+    min-height: 42px; 
+    touch-action: manipulation;
+    /* padding 已在 Tailwind 中通过 px- py- 等类控制 */
+}
+input[type="text"]::placeholder {
+    color: #9ca3af; /* Tailwind: placeholder-gray-400 */
+}
+
+/* 美化滚动条 (可选) */
+#movesLog, #availableRoomsContainer {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #9ca3af #f3f4f6; /* Firefox: thumb track */
+}
+#movesLog::-webkit-scrollbar, #availableRoomsContainer::-webkit-scrollbar {
+    width: 6px;
+}
+#movesLog::-webkit-scrollbar-track, #availableRoomsContainer::-webkit-scrollbar-track {
+    background: #f3f4f6; /* Tailwind: bg-gray-100 */
+    border-radius: 3px;
+}
+#movesLog::-webkit-scrollbar-thumb, #availableRoomsContainer::-webkit-scrollbar-thumb {
+    background-color: #9ca3af; /* Tailwind: bg-gray-400 */
+    border-radius: 3px;
+    border: 1px solid #f3f4f6; /* Tailwind: border-gray-100 */
+}

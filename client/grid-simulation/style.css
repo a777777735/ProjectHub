@@ -1,0 +1,118 @@
+/* interactive-grid-simulation/style.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    overflow: hidden; /* 这个 overflow: hidden 在 body 上可能不是你想要的，它会阻止页面滚动 */
+                     /* 如果控制面板内容很多，你可能希望 body 能滚动，或者只在 canvas-container 上设置 overflow */
+}
+.canvas-container {
+    position: relative;
+    width: 100%;
+    height: 100vh; /* 占满整个视口高度 */
+    border: 1px solid #ccc;
+    overflow: hidden; /* 画布容器溢出隐藏是合理的 */
+}
+#simulationCanvas {
+    display: block;
+    /* 宽度和高度将由JS设置或CSS设为100%以填充容器 */
+    width: 100%;
+    height: 100%;
+}
+#contextMenu {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: none;
+    padding: 5px;
+    border-radius: 4px; /* 添加圆角 */
+}
+#contextMenu div {
+    padding: 8px 12px; /* 增加内边距 */
+    cursor: pointer;
+    font-size: 14px; /* 统一字体大小 */
+    border-radius: 3px; /* 菜单项圆角 */
+}
+#contextMenu div:hover {
+    background: #f0f0f0;
+}
+
+/* 控制面板样式 */
+.control-panel {
+    position: fixed;
+    top: 0;
+    right: -300px; /* 初始隐藏在右侧 */
+    width: 300px;
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+    transition: right 0.3s ease-in-out; /* 平滑过渡 */
+    padding: 20px;
+    overflow-y: auto; /* 内容过多时允许滚动 */
+    z-index: 1001; /* 比 contextMenu 高一点，确保在最上层 */
+    font-size: 14px; /* 控制面板内统一字体大小 */
+}
+.control-panel.show {
+    right: 0; /* 显示控制面板 */
+}
+.control-panel label {
+    font-weight: 500; /* Tailwind: font-medium */
+}
+.control-panel input[type="number"],
+.control-panel select {
+    width: 100%; /* 让输入框和选择框宽度一致 */
+    box-sizing: border-box; /* 确保 padding 和 border 不会增加宽度 */
+}
+.control-panel input[type="checkbox"] {
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+
+/* 画布上的按钮和标签 */
+#togglePanelBtn, #zoomInBtn, #zoomOutBtn, #zoomLabel {
+    position: absolute;
+    z-index: 999; /* 低于 contextMenu 和 controlPanel */
+    background: #007bff; /* Tailwind: bg-blue-600 */
+    color: white;
+    border: none;
+    padding: 8px 14px; /* 增加点击区域 */
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+#togglePanelBtn {
+    top: 15px;
+    left: 15px;
+}
+#zoomInBtn {
+    top: 15px;
+    /* 根据 togglePanelBtn 的宽度调整 left 值，或使用 flexbox 布局 */
+    left: calc(15px + 120px + 10px); /* 假设 togglePanelBtn 大约 120px 宽 */
+}
+#zoomOutBtn {
+    top: 15px;
+    left: calc(15px + 120px + 10px + 40px + 5px); /* 在 zoomInBtn 之后 */
+}
+#zoomLabel {
+    top: 15px;
+    left: calc(15px + 120px + 10px + 40px + 5px + 40px + 5px); /* 在 zoomOutBtn 之后 */
+    background: #f8f9fa; /* Tailwind: bg-gray-100 */
+    color: #212529; /* Tailwind: text-gray-900 */
+    padding: 8px 12px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 底部说明文字区域 */
+.canvas-container > .absolute.bottom-0 {
+    background-color: rgba(255, 255, 255, 0.85); /* 半透明背景，避免与画布内容冲突 */
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    max-height: 30vh; /* 限制最大高度，允许滚动 */
+    overflow-y: auto;
+    font-size: 12px; /* 调小字体 */
+    line-height: 1.6;
+}

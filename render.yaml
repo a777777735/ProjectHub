@@ -1,48 +1,37 @@
 # ProjectHub/render.yaml
-
 services:
-  #-------------------------------------------------
-  # Service 1: Tic Tac Toe Backend (Socket.IO Server)
-  #-------------------------------------------------
   - type: web
-    name: projecthub-ttt-backend # 确保这个名字在你的Render账户中是唯一的
-    env: node
-    region: oregon # 或你选择的区域
-    plan: free # 注意免费套餐的限制
-    rootDir: apps/tic-tac-toe-server # 命令在此目录下执行
-    buildCommand: "npm install && echo '--- [TTT Backend] Listing apps/tic-tac-toe-server directory: ---' && ls -la"
-    startCommand: "node server.js"
-    healthCheckPath: / # 你的 apps/tic-tac-toe-server/server.js 应有一个根路由
-    envVars:
-      - key: NODE_ENV
-        value: production
-      # PORT is automatically injected by Render
-
-  #-------------------------------------------------
-  # Service 2: Main Frontend Server (Serves static files and app routes from root server/index.js)
-  #-------------------------------------------------
-  - type: web
-    name: projecthub-main-frontend # 确保这个名字在你的Render账户中是唯一的
+    name: projecthub-ttt-backend 
     env: node
     region: oregon 
     plan: free
-    # No rootDir, commands run from repository root.
-    buildCommand: "npm install && echo '--- [Main Frontend] Listing repository root directory: ---' && ls -la && echo '--- [Main Frontend] Listing server/ directory (if it exists): ---' && ls -la server/"
-    startCommand: "node server/index.js"
-    healthCheckPath: / # 主菜单页
+    rootDir: apps/tic-tac-toe-server 
+    buildCommand: "npm install && echo '--- [TTT Backend] Listing current (apps/tic-tac-toe-server) directory: ---' && ls -la"
+    startCommand: "node server.js"
+    healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
-      # PORT is automatically injected by Render
-      # 如果需要，可以设置环境变量将 ttt-backend 的 URL 传递给这个服务
-      # - key: TIC_TAC_TOE_BACKEND_INTERNAL_URL 
+
+  - type: web
+    name: projecthub-main-frontend 
+    env: node
+    region: oregon 
+    plan: free
+    # No rootDir, build/start commands run from repository root.
+    # The buildCommand will also list files for debugging.
+    buildCommand: "npm install && echo '--- [Main Frontend] Listing repository root: ---' && ls -la && echo '--- [Main Frontend] Listing server/ directory: ---' && ls -la server/"
+    startCommand: "node server/index.js" # **This now correctly points to ProjectHub/server/index.js**
+    healthCheckPath: / 
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Example of passing the TTT backend's internal URL to this frontend server
+      # This frontend server could then, for example, inject it into the TTT client HTML if needed,
+      # or the TTT client JS could fetch it from an API endpoint on this frontend server.
+      # However, for client-side JS直接连接，客户端JS需要知道后端的公共URL。
+      # - key: TIC_TAC_TOE_BACKEND_URL # Public URL
       #   fromService:
       #     type: web
-      #     name: projecthub-ttt-backend # 必须与上面 ttt-backend 服务的 name 匹配
-      #     property: hostport # Render 内部服务地址，格式如 service-name:port
-      # 或者 TIC_TAC_TOE_BACKEND_PUBLIC_URL 如果你需要公共 URL
-      # - key: TIC_TAC_TOE_BACKEND_PUBLIC_URL
-      #   fromService:
-      #     type: web
-      #     name: projecthub-ttt-backend
-      #     property: url # Render 服务的公共 URL
+      #     name: projecthub-ttt-backend # Must match the name above
+      #     property: url

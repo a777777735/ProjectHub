@@ -1,0 +1,66 @@
+# ProjectHub/render.yaml
+
+# Blueprint Spec: https://render.com/docs/blueprint-spec
+# This file defines the services that make up your application.
+
+services:
+  #-------------------------------------------------
+  # Service 1: Tic Tac Toe Backend (Socket.IO Server)
+  #-------------------------------------------------
+  - type: web # 'web' for services that listen for HTTP/WebSocket traffic
+    name: projecthub-ttt-backend # A unique name for this service on Render
+    env: node # Environment: node, python, ruby, go, docker, etc.
+    region: oregon # Optional: singapore, frankfurt, ohio, oregon, california
+    plan: free # Optional: free, starter, standard, etc. (check Render's pricing)
+
+    # --- Build and Start Configuration for Tic Tac Toe Backend ---
+    # Specifies that commands should be run relative to this directory
+    # from the root of your repository.
+    rootDir: apps/tic-tac-toe-server 
+    
+    buildCommand: "npm install" # Executed in 'apps/tic-tac-toe-server/'
+    startCommand: "node server.js" # Executed in 'apps/tic-tac-toe-server/'
+
+    healthCheckPath: / # Assumes your apps/tic-tac-toe-server/server.js has a GET / route
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT is automatically injected by Render and used by your server.js
+
+  #-------------------------------------------------
+  # Service 2: Main Frontend Server (Serves static files and app routes)
+  #-------------------------------------------------
+  - type: web # This also needs to be a 'web' service because it runs a Node.js server
+    name: projecthub-main-frontend # A unique name for this service on Render
+    env: node
+    region: oregon # Keep regions consistent or choose as needed
+    plan: free
+
+    # --- Build and Start Configuration for Main Frontend Server ---
+    # rootDir is not specified, so commands run from the repository root.
+    
+    buildCommand: "npm install" # Installs dependencies from the root package.json (for Express)
+    startCommand: "node server/index.js" # Starts your main Express server from ProjectHub/server/index.js
+
+    healthCheckPath: / # The main menu page can serve as a health check
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT is automatically injected by Render for this service too.
+      # If your client-side JS needs to know the TTT backend URL, 
+      # you can link services or use environment variables.
+      # Example of linking (Render might do this स्मार्टly or you might need to set manually):
+      # - key: TIC_TAC_TOE_BACKEND_URL
+      #   fromService: # This tells Render to inject the URL of another service
+      #     type: web
+      #     name: projecthub-ttt-backend # Must match the name of your ttt backend service
+      #     property: hostport # or just 'url' if it provides the full https url
+
+# Optional: Databases, Redis, etc. can also be defined here
+# databases:
+#   - name: my-database
+#     databaseName: mydb
+#     user: myuser
+#     plan: free

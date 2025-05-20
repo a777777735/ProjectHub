@@ -9,9 +9,11 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     // 例如: ticTacToeServerUrl = 'https://your-projecthub-ttt-backend.onrender.com';
     ticTacToeServerUrl = 'https://tic-tac-toe-server-56n6.onrender.com'; // <<--- 务必替换为你自己的后端URL
 }
-console.log(`[Client-TTT] Connecting to Tic Tac Toe Socket.IO server at: ${ticTacToeServerUrl}`);
-
-const socket = io(ticTacToeServerUrl, {
+console.log(`[Client-TTT] Connecting to Socket.IO server at the current origin`);
+const socket = io(window.location.origin, { // 连接到当前页面的源
+    // 如果你为井字棋使用了命名空间 (例如在 server/index.js 中用 io.of('/tic-tac-toe'))
+    // path: '/tic-tac-toe/socket.io', // (通常不需要，除非服务器端配置了不同的path)
+    // 如果使用了命名空间，应该是: const socket = io(window.location.origin + '/your-namespace');
     reconnectionAttempts: 5,
     transports: ['websocket', 'polling']
 });

@@ -10,11 +10,12 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     ticTacToeServerUrl = 'https://tic-tac-toe-server-56n6.onrender.com'; // <<--- 务必替换为你自己的后端URL
 }
 console.log(`[Client-TTT] Connecting to Tic Tac Toe Socket.IO server at: ${ticTacToeServerUrl}`);
-const socket = io(ticTacToeServerUrl, {
-    reconnectionAttempts: 5,
-    transports: ['websocket', 'polling']
-});
 
+//const socket = io(ticTacToeServerUrl, {
+//    reconnectionAttempts: 5,
+//    transports: ['websocket', 'polling']
+//});
+const socket = io(ticTacToeServerUrl);
 // --- 全局变量和状态 ---
 let gameMode = ''; // 'multiplayer' or 'ai'
 let currentRoom = ''; // 当前客户端所在的房间ID

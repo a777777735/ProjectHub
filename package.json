@@ -1,16 +1,20 @@
 {
-  "name": "project-hub",
+  "name": "project-hub-main", 
   "version": "1.0.0",
-  "description": "A collection of interactive web applications including Tic Tac Toe and a Grid Simulator.",
+  "description": "Main server for ProjectHub, serving frontend applications.",
+  "main": "server/index.js", 
   "scripts": {
-    "start-main-server": "node server/index.js", 
+    "start": "node server/index.js", 
     "start-ttt-backend": "node apps/tic-tac-toe-server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "a777777735",
-  "license": "ISC",
-  "private": true,
   "dependencies": {
     "express": "^4.18.2"
-  }
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "a777777735",
+  "license": "ISC",
+  "private": true
 }

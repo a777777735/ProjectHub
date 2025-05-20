@@ -1,66 +1,41 @@
 # ProjectHub/render.yaml
 
-# Blueprint Spec: https://render.com/docs/blueprint-spec
-# This file defines the services that make up your application.
-
 services:
   #-------------------------------------------------
   # Service 1: Tic Tac Toe Backend (Socket.IO Server)
   #-------------------------------------------------
-  - type: web # 'web' for services that listen for HTTP/WebSocket traffic
-    name: projecthub-ttt-backend # A unique name for this service on Render
-    env: node # Environment: node, python, ruby, go, docker, etc.
-    region: oregon # Optional: singapore, frankfurt, ohio, oregon, california
-    plan: free # Optional: free, starter, standard, etc. (check Render's pricing)
-
-    # --- Build and Start Configuration for Tic Tac Toe Backend ---
-    # Specifies that commands should be run relative to this directory
-    # from the root of your repository.
-    rootDir: apps/tic-tac-toe-server 
-    
-    buildCommand: "npm install" # Executed in 'apps/tic-tac-toe-server/'
-    startCommand: "node server.js" # Executed in 'apps/tic-tac-toe-server/'
-
-    healthCheckPath: / # Assumes your apps/tic-tac-toe-server/server.js has a GET / route
-    
-    envVars:
-      - key: NODE_ENV
-        value: production
-      # PORT is automatically injected by Render and used by your server.js
-
-  #-------------------------------------------------
-  # Service 2: Main Frontend Server (Serves static files and app routes)
-  #-------------------------------------------------
-  - type: web # This also needs to be a 'web' service because it runs a Node.js server
-    name: projecthub-main-frontend # A unique name for this service on Render
+  - type: web
+    name: projecthub-ttt-backend # 确保这个名字在你的Render账户中是唯一的
     env: node
-    region: oregon # Keep regions consistent or choose as needed
+    region: oregon # 或你选择的区域
     plan: free
-
-    # --- Build and Start Configuration for Main Frontend Server ---
-    # rootDir is not specified, so commands run from the repository root.
-    
-    buildCommand: "npm install" # Installs dependencies from the root package.json (for Express)
-    startCommand: "node server/index.js" # Starts your main Express server from ProjectHub/server/index.js
-
-    healthCheckPath: / # The main menu page can serve as a health check
-    
+    rootDir: apps/tic-tac-toe-server # 命令在此目录下执行
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
-      # PORT is automatically injected by Render for this service too.
-      # If your client-side JS needs to know the TTT backend URL, 
-      # you can link services or use environment variables.
-      # Example of linking (Render might do this स्मार्टly or you might need to set manually):
-      # - key: TIC_TAC_TOE_BACKEND_URL
-      #   fromService: # This tells Render to inject the URL of another service
-      #     type: web
-      #     name: projecthub-ttt-backend # Must match the name of your ttt backend service
-      #     property: hostport # or just 'url' if it provides the full https url
+      # PORT is automatically injected by Render
 
-# Optional: Databases, Redis, etc. can also be defined here
-# databases:
-#   - name: my-database
-#     databaseName: mydb
-#     user: myuser
-#     plan: free
+  #-------------------------------------------------
+  # Service 2: Main Frontend Server (Serves static files and app routes from root server/index.js)
+  #-------------------------------------------------
+  - type: web
+    name: projecthub-main-frontend # 确保这个名字在你的Render账户中是唯一的
+    env: node
+    region: oregon # 与上面服务保持一致或按需选择
+    plan: free
+    # No rootDir, commands run from repository root.
+    buildCommand: "npm install" # 安装根目录 package.json 中的依赖 (如 express)
+    startCommand: "node server/index.js" # **这里指定了 server/index.js**
+    healthCheckPath: / # 主菜单页
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT is automatically injected by Render
+      # 如果井字棋前端需要知道后端的URL，你需要确保客户端JS能获取到
+      # projecthub-ttt-backend 服务的URL。
+      # 这通常通过在客户端JS中硬编码Render分配的后端URL，
+      # 或者如果前端是由这个main-frontend服务动态渲染的，则可以通过服务器端注入。
+      # 对于纯静态前端，客户端JS直接连接到后端的公共URL。

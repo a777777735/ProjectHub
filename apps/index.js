@@ -4,41 +4,47 @@ const http = require('http'); // http 模块是Node.js内置的
 const path = require('path');
 
 const app = express();
-const mainServer = http.createServer(app); // 为主应用创建一个HTTP服务器实例
+const mainServer = http.createServer(app);
 
-const PORT_MAIN = process.env.PORT || 3000; // 主前端服务器端口
+const PORT_MAIN = process.env.PORT || 3000; // Render 会注入 PORT
 
 // --- 静态文件服务 ---
 // 将 client 目录作为静态资源的根目录
+// 例如访问 /css/menu-style.css 会查找 client/css/menu-style.css
+// 访问 /tic-tac-toe/style.css 会查找 client/tic-tac-toe/style.css
 app.use(express.static(path.join(__dirname, '../client')));
 
 // --- 页面路由 ---
-// 主菜单页 (当访问根路径 / 时)
+// 主菜单页
 app.get('/', (req, res) => {
+    console.log('[MainServer] Request for / received, sending client/index.html');
     res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
-// 井字棋游戏页 (当访问 /tic-tac-toe 时)
-// 注意：这个路由确保了即使在浏览器地址栏直接输入 /tic-tac-toe 也能访问
-// 而不是依赖静态服务器自动寻找 index.html
+// 井字棋游戏页
 app.get('/tic-tac-toe', (req, res) => {
+    console.log('[MainServer] Request for /tic-tac-toe received, sending client/tic-tac-toe/index.html');
     res.sendFile(path.join(__dirname, '../client/tic-tac-toe/index.html'));
 });
 
-// 网格模拟器页 (当访问 /grid-simulation 时)
+// 网格模拟器页
 app.get('/grid-simulation', (req, res) => {
+    console.log('[MainServer] Request for /grid-simulation received, sending client/grid-simulation/index.html');
     res.sendFile(path.join(__dirname, '../client/grid-simulation/index.html'));
 });
 
-// 如果有其他单页应用，也需要类似的路由来处理它们的入口 index.html
-// 例如，确保直接访问 /tic-tac-toe/some/deep/link 也能返回井字棋的index.html，由前端路由处理后续
-// 这对于部署到Render并使用其路由重写功能时很有用。
-// 对于本地Node.js服务器，上面的get路由已经足够提供入口HTML了。
+// 可选: 处理所有其他未匹配的GET请求，都返回主菜单 (用于前端路由的 fallback)
+// 或者，如果你希望子应用的深层链接也能工作，可能需要更复杂的处理
+// 但对于直接提供 index.html，上面的已经够了
+// app.get('*', (req, res) => {
+//   console.log(`[MainServer] Catch-all for ${req.path}, sending client/index.html`);
+//   res.sendFile(path.join(__dirname, '../client/index.html'));
+// });
+
 
 mainServer.listen(PORT_MAIN, () => {
     console.log(`[MainServer] 主应用服务器运行于端口 ${PORT_MAIN}`);
-    console.log(`  主菜单: http://localhost:${PORT_MAIN}/`);
-    console.log(`  井字棋入口 (由主服务器路由): http://localhost:${PORT_MAIN}/tic-tac-toe`);
-    console.log(`  网格模拟入口 (由主服务器路由): http://localhost:${PORT_MAIN}/grid-simulation`);
-    console.log(`  (确保井字棋后端服务已在另外的端口独立运行，例如 http://localhost:3001)`);
+    console.log(`  主菜单入口: /`);
+    console.log(`  井字棋入口: /tic-tac-toe`);
+    console.log(`  网格模拟入口: /grid-simulation`);
 });

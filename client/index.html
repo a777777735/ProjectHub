@@ -48,18 +48,27 @@
                 </div>
             </a>
             <!-- onclick 事件被移除了，现在是纯链接 -->
-            <a href="./ExcelCoordinateMapper/index.html" class="menu-card group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
+            <a href="/ExcelCoordinateMapper/index.html" 
+               class="menu-card group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden min-w-[300px] max-w-[400px] mx-auto">
                 <div class="p-6">
-                    <div class="w-16 h-16 bg-green-500 text-white flex items-center justify-center rounded-full mx-auto mb-4 text-3xl group-hover:bg-green-600 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    <div class="w-16 h-16 bg-purple-500 text-white flex items-center justify-center rounded-full mx-auto mb-4 group-hover:bg-purple-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" 
+                             fill="none" 
+                             viewBox="0 0 24 24" 
+                             stroke-width="1.5" 
+                             stroke="currentColor" 
+                             class="w-8 h-8 text-white"> <!-- 明确指定颜色 -->
+                            <path ... />
                         </svg>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 group-hover:text-green-600 transition-colors mb-2">點位模板套用</h2>
-                    <p class="text-sm text-gray-500">快速讀取座標，定義模板，智能匹配並批量應用於圖上所有相似點組。</p>
-                </div>
-                <div class="bg-gray-50 px-6 py-3 text-right">
-                    <span class="text-green-500 group-hover:text-green-700 font-semibold text-sm">启动模拟 →</span>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 group-hover:text-purple-600 transition-colors mb-2">
+                        點位模板套用
+                    </h2>
+                    <div class="bg-gray-50 px-6 py-3 text-right">
+                        <span class="text-purple-500 group-hover:text-purple-700 font-semibold text-sm">
+                            开始应用 →
+                        </span>
+                    </div>
                 </div>
             </a>
         </main>

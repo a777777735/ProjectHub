@@ -177,8 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.translate(panX, panY);
         ctx.scale(scale, scale);
 
-        const rectW = parseFloat(rectWidthInput.value) || 10;
-        const rectH = parseFloat(rectHeightInput.value) || 10;
+        const rectW = parseFloat(rectWidthInput.value) || 100;
+        const rectH = parseFloat(rectHeightInput.value) || 100;
 
         pointsData.forEach(point => {
             drawPoint(point, rectW, rectH);

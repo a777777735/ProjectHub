@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雲端隨身筆記</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        input[type="text"], input[type="password"], textarea, button { width: 100%; margin-bottom: 12px; padding: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        textarea { height: 300px; resize: vertical; font-family: inherit; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        button.btn-danger { background-color: #dc3545; }
+        button.btn-danger:hover { background-color: #a71d2a; }
+        #editor-section { display: none; }
+        .msg-box { text-align: center; font-weight: bold; min-height: 24px; margin-bottom: 10px; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #856404; font-size: 14px; text-align: center; margin-bottom: 15px; }
+        
+        .file-section { background-color: #f1f8ff; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #007bff; }
+        .file-list { margin-top: 10px; font-size: 14px; }
+        .file-item { margin-bottom: 5px; padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .file-item a { color: #007bff; text-decoration: none; word-break: break-all;}
+        .file-item a:hover { text-decoration: underline; }
+        input[type="file"] { margin-bottom: 5px; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📝 雲端隨身筆記</h2>
+        <div class="warning">⚠️ 注意：伺服器休眠或重啟時，所有文章與檔案將會清空。</div>
+
+        <div id="auth-section">
+            <input type="text" id="username" placeholder="請輸入自訂帳號 (無帳號將自動註冊)" />
+            <input type="password" id="password" placeholder="請輸入密碼" />
+            <button onclick="handleAction('read')">登入並讀取資料</button>
+            <div id="auth-msg" class="msg-box error"></div>
+        </div>
+
+        <div id="editor-section">
+            <p style="text-align: right; margin: 0 0 10px 0;">目前登入：<strong id="display-user"></strong></p>
+            <textarea id="content" placeholder="在這裡貼上或輸入無限長度的文字..."></textarea>
+            
+            <div class="file-section">
+                <strong>📁 附加檔案 (不限格式)</strong>
+                <div style="font-size: 12px; color: #666; margin-bottom: 10px;">檔案會隨文章一起儲存。建議單次上傳總大小不要超過 10MB。</div>
+                <input type="file" id="file-upload" multiple />
+                
+                <div id="server-files-container" style="display: none; margin-top: 15px;">
+                    <strong>雲端現有檔案 (點擊下載)：</strong>
+                    <div id="file-list" class="file-list"></div>
+                </div>
+            </div>
+
+            <button onclick="handleAction('write')">💾 儲存文字與檔案到雲端</button>
+            <button class="btn-danger" onclick="logout()">🚪 登出</button>
+            <div id="editor-msg" class="msg-box success"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUsername = '';
+        let currentPassword = '';
+
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function handleAction(action) {
+            const userEl = document.getElementById('username');
+            const passEl = document.getElementById('password');
+            const contentEl = document.getElementById('content');
+            const fileInput = document.getElementById('file-upload');
+            const authMsg = document.getElementById('auth-msg');
+            const editorMsg = document.getElementById('editor-msg');
+
+            const u = currentUsername || userEl.value.trim();
+            const p = currentPassword || passEl.value.trim();
+            const c = contentEl.value;
+
+            if (!u || !p) {
+                authMsg.textContent = "請輸入帳號和密碼！";
+                return;
+            }
+
+            authMsg.textContent = "處理中...";
+            editorMsg.textContent = "資料傳輸中...";
+
+            let filesData = [];
+            if (action === 'write' && fileInput.files.length > 0) {
+                for (const file of fileInput.files) {
+                    try {
+                        const base64Data = await getBase64(file);
+                        filesData.push({ name: file.name, type: file.type, data: base64Data });
+                    } catch (err) {
+                        console.error("檔案讀取失敗", err);
+                    }
+                }
+            }
+
+            try {
+                const payload = { username: u, password: p, action: action, content: c };
+                if (action === 'write' && filesData.length > 0) {
+                    payload.files = filesData;
+                }
+
+                const response = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    authMsg.textContent = data.error || "發生錯誤";
+                    editorMsg.textContent = data.error || "發生錯誤";
+                    editorMsg.className = "msg-box error";
+                    return;
+                }
+
+                if (action === 'read') {
+                    currentUsername = u;
+                    currentPassword = p;
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('editor-section').style.display = 'block';
+                    document.getElementById('display-user').textContent = currentUsername;
+                    contentEl.value = data.content || "";
+                    
+                    renderFiles(data.files);
+
+                    editorMsg.textContent = data.message;
+                    editorMsg.className = "msg-box success";
+                } else if (action === 'write') {
+                    editorMsg.textContent = data.message;
+                    editorMsg.className = "msg-box success";
+                    fileInput.value = ""; 
+                    
+                    if(filesData.length > 0) {
+                        handleAction('read');
+                    } else {
+                        setTimeout(() => editorMsg.textContent = "", 3000);
+                    }
+                }
+
+            } catch (err) {
+                authMsg.textContent = "連線錯誤";
+                editorMsg.textContent = "連線錯誤";
+                editorMsg.className = "msg-box error";
+            }
+        }
+
+        function renderFiles(files) {
+            const container = document.getElementById('server-files-container');
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+
+            if (files && files.length > 0) {
+                container.style.display = 'block';
+                files.forEach(f => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'file-item';
+                    
+                    const link = document.createElement('a');
+                    link.href = f.data;
+                    link.download = f.name;
+                    link.textContent = '📎 ' + f.name;
+                    
+                    itemDiv.appendChild(link);
+                    fileList.appendChild(itemDiv);
+                });
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function logout() {
+            currentUsername = '';
+            currentPassword = '';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('content').value = '';
+            document.getElementById('file-upload').value = '';
+            document.getElementById('file-list').innerHTML = '';
+            document.getElementById('server-files-container').style.display = 'none';
+            document.getElementById('editor-msg').textContent = '';
+            document.getElementById('auth-msg').textContent = '';
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('editor-section').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

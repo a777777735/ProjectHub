@@ -8,6 +8,45 @@ const initializeTicTacToeSocket = require('../apps/tic-tac-toe-server/socketHand
 const app = express();
 const httpServer = http.createServer(app); // Renamed server to httpServer to avoid conflict
 
+// --- 中間件設定 (支援雲端隨身筆記大檔案上傳) ---
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// --- 雲端隨身筆記 (TempFile) 後端邏輯 ---
+const memoryDB = {}; // 暫時性記憶體資料庫
+
+app.post('/api/sync', (req, res) => {
+    const { username, password, action, content, files } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: "請輸入帳號和密碼" });
+    }
+
+    if (!memoryDB[username]) {
+        memoryDB[username] = { password: password, content: "", files: [] };
+    }
+
+    if (memoryDB[username].password !== password) {
+        return res.status(401).json({ error: "密碼錯誤，請重新輸入" });
+    }
+
+    if (action === 'write') {
+        memoryDB[username].content = content;
+        if (files && files.length > 0) {
+            memoryDB[username].files = files; 
+        } else if (!files) {
+            memoryDB[username].files = [];
+        }
+        return res.json({ message: "✅ 文章與檔案儲存成功！" });
+    } else { 
+        return res.json({ 
+            message: "✅ 讀取成功！", 
+            content: memoryDB[username].content,
+            files: memoryDB[username].files || []
+        });
+    }
+});
+
 // 初始化 Socket.IO 并将其附加到 HTTP 服务器
 const io = new Server(httpServer, {
     cors: {

@@ -1,0 +1,2009 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人力需求總表 (Manpower Requirement) V29 旗艦版</title>
+    
+    <script src="xlsx.full.min.js"></script>
+
+    <style>
+        body { 
+            font-family: "Microsoft JhengHei", Arial, sans-serif; 
+            background-color: #f4f7f6; 
+            margin: 0; 
+            padding: 20px; 
+            color: #333;
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* ================= 現代化儀表板控制區 ================= */
+        .control-panel {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 12px;
+        }
+        .header-row h2 {
+            margin: 0;
+            color: #1565C0;
+            font-size: 22px;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .header-row h2 span { font-size: 14px; color: #78909c; font-weight: normal; }
+        
+        .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .tools-row { display: flex; flex-wrap: wrap; gap: 12px; }
+        
+        .filter-controls, .view-controls {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 13px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .panel-label { font-weight: bold; color: #455a64; white-space: nowrap; }
+        
+        .filter-controls select, .filter-controls input {
+            padding: 6px; border-radius: 4px; border: 1px solid #ccc; outline: none; background: #fff;
+        }
+        .filter-controls input { flex: 1; min-width: 120px; }
+        
+        .view-controls { flex: 1.2; }
+        .view-controls label {
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
+            color: #0277bd; background: #e3f2fd; padding: 4px 8px; border-radius: 4px;
+            font-weight: bold; transition: 0.2s; user-select: none;
+        }
+        .view-controls label:hover { background: #bbdefb; }
+        .view-controls input[type="checkbox"] { cursor: pointer; margin: 0; }
+
+        /* 按鈕共用設定 */
+        button { padding: 8px 14px; font-size: 13px; cursor: pointer; border: none; border-radius: 4px; background-color: #4CAF50; color: white; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: bold;}
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+        button:active { transform: translateY(0); }
+        .btn-main { background-color: #43a047; font-size: 14px; padding: 8px 18px; }
+        .btn-danger { background-color: #e53935; }
+        .btn-setting { background-color: #546e7a; }
+        .btn-export { background-color: #1e88e5; } 
+        .btn-import { background-color: #fb8c00; } 
+        .btn-recovery { background-color: #8e24aa; }
+        .btn-copy { background-color: #00897b; }
+        .btn-small { padding: 5px 10px; font-size: 12px; font-weight: normal; background-color: #9e9e9e;}
+        .btn-cancel { background-color: #777; }
+
+        /* 右鍵選單樣式 */
+        .context-menu {
+            position: absolute;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            padding: 6px 0;
+            min-width: 160px;
+            z-index: 2000;
+            font-size: 14px;
+            border: 1px solid #eee;
+        }
+        .context-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #333;
+            transition: background 0.2s;
+        }
+        .context-menu-item:hover { background-color: #f0f8ff; color: #1976D2; }
+        .context-menu-item.danger:hover { background-color: #ffebee; color: #d32f2f; }
+        .context-menu-item.disabled { color: #aaa; cursor: not-allowed; }
+        .context-menu-item.disabled:hover { background-color: white; color: #aaa; }
+
+        /* 主頁面 1~12 月輸入框樣式 */
+        .inline-workload-input {
+            width: 45px;
+            text-align: center;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-size: 13px;
+            padding: 4px 2px;
+            background-color: transparent;
+            transition: 0.2s;
+        }
+        .inline-workload-input:hover { border-color: #ccc; background-color: #fcfcfc; }
+        .inline-workload-input:focus { outline: none; border-color: #2196f3; background-color: #fff; box-shadow: 0 0 3px rgba(33, 150, 243, 0.5); }
+        .inline-workload-input:invalid { border-color: red; background-color: #ffebee; }
+
+        /* 表格與容器設定 */
+        .table-container { 
+            overflow: auto; 
+            background-color: white; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            border-radius: 8px; 
+            flex: 1; 
+            min-height: 0; 
+        }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: center; font-size: 14px;}
+        
+        /* 表頭、表尾吸附與排序箭頭 */
+        th { background-color: #e2e8f0; position: sticky; top: 0; z-index: 10;}
+        tfoot td { 
+            position: sticky; 
+            bottom: 0; 
+            z-index: 10; 
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1); 
+            border-top: 2px solid #ffb300;
+        }
+        tbody tr { background-color: #ffffff; cursor: context-menu; }
+        tbody tr:hover { background-color: #f0f8ff; }
+
+        th.sortable { 
+            cursor: pointer; 
+            user-select: none; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            padding-right: 18px; 
+            transition: background-color 0.2s;
+        }
+        th.sortable:hover { filter: brightness(0.95); }
+        th.sortable::after { content: '↕'; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); opacity: 0.2; font-size: 12px; }
+        th.sortable.asc::after { content: '🔼'; opacity: 1; }
+        th.sortable.desc::after { content: '🔽'; opacity: 1; }
+
+        /* Modal (彈出視窗) 設定 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto;}
+        .modal-content { background-color: #fff; margin: 2% auto; padding: 20px 30px; border-radius: 8px; width: 95%; max-width: 1100px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .close { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        .modal-footer { margin-top: 20px; text-align: right; border-top: 2px solid #eee; padding-top: 15px; }
+
+        /* 瀑布流與關聯選單 */
+        .relation-container { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #eee; transition: all 0.3s;}
+        .step-hidden { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+
+        .check-group { flex: 1; min-width: 120px; display: flex; flex-direction: column;}
+        .check-group label.title { font-weight: bold; margin-bottom: 8px; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 4px; display:flex; justify-content:space-between;}
+        .check-list { display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 5px;}
+        .check-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 13px; color: #333;}
+        .check-btn:hover { background: #e9ecef; }
+        .check-btn.active { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; font-weight: bold; box-shadow: inset 3px 0 0 #2196f3;}
+        .check-btn.disabled { display: none; } 
+
+        .tag-npi { background: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight:bold;}
+        .tag-mp { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight:bold;}
+
+        /* 甘特圖與工作量輸入 */
+        .gantt-wrapper { width: 100%; overflow-x: auto; margin-bottom: 10px; padding-bottom: 10px;}
+        .gantt-scroll-area { min-width: 880px; } 
+        .gantt-container-parent { margin-left: 84px; width: calc(100% - 84px); margin-bottom: 8px; display: none; }
+        .gantt-container { position: relative; width: 100%; height: 40px; background: #fdfdfd; border-radius: 6px; border: 1px solid #ddd; transition: height 0.3s; }
+        .gantt-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; }
+        .gantt-grid div { border-right: 1px dashed #e0e0e0; box-sizing: border-box; }
+        .gantt-grid div:last-child { border-right: none; }
+        
+        .gantt-bar {
+            position: absolute; height: 24px; border-radius: 3px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 6px; font-size: 11px; color: white; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            white-space: nowrap; overflow: hidden; transition: 0.3s;
+        }
+        .gantt-bar b { font-size: 12px; letter-spacing: 0.5px; margin: 0 4px;}
+        .gantt-bar span { opacity: 0.9; font-size: 10px; }
+        .gantt-npi { background-color: #283593; } 
+        .gantt-mp { background-color: #00695c; }  
+
+        .workload-header-grid { display: grid; grid-template-columns: 80px repeat(12, 1fr); gap: 4px; margin-bottom: 6px; align-items: end; }
+        .workload-header { font-size: 13px; font-weight: bold; text-align: center; background: #eee; border-radius: 4px; padding: 6px 0;}
+        .workload-rows-container { display: flex; flex-direction: column; gap: 8px; }
+        .workload-row { display: grid; grid-template-columns: 80px repeat(12, 1fr); gap: 4px; align-items: center; }
+        .workload-row-name { font-weight: bold; text-align: center; background: #e3f2fd; padding: 8px 4px; border-radius: 4px; color: #0277bd; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .workload-input { width: 100%; box-sizing: border-box; padding: 8px 2px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;}
+        .workload-input:invalid { border-color: red; background-color: #ffebee;}
+
+        /* 資料庫管理 Tabs 與表格 */
+        .db-tabs { display: flex; border-bottom: 2px solid #ccc; margin-bottom: 15px; gap: 5px; flex-wrap: wrap;}
+        .db-tab-btn { background: #f1f1f1; color: #333; border-radius: 6px 6px 0 0; padding: 10px 20px; font-weight: bold;}
+        .db-tab-btn.active { background: #607d8b; color: white;}
+        .db-tab-content { display: none; }
+        .db-tab-content.active { display: block; }
+        .action-bar { padding: 12px 15px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);}
+        .action-bar .action-label { font-weight: bold; display: flex; align-items: center; white-space: nowrap; font-size: 14px;}
+        .action-bar input, .action-bar select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 120px;}
+        .db-table { width: 100%; border-collapse: collapse; margin-top: 10px;}
+        .db-table th, .db-table td { border: 1px solid #eee; padding: 8px 10px; text-align: left; font-size: 14px;}
+        .db-table th { background-color: #f9f9f9; color: #555; position: sticky; top: 0;}
+    </style>
+</head>
+<body>
+
+    <div class="control-panel">
+        <div class="header-row">
+            <h2>人力需求總表 <span>(Manpower Requirement)</span></h2>
+            <div class="toolbar">
+                <button class="btn-main" onclick="openDataModal(-1)">➕ 新增資料</button>
+                <button class="btn-setting" onclick="openDbModal()">⚙️ 管理資料庫</button>
+                <button class="btn-copy" onclick="copyTableToClipboard()">📋 複製視角</button>
+                <button class="btn-export" onclick="exportToExcel()">📤 匯出</button>
+                <button class="btn-import" onclick="document.getElementById('excelFileInput').click()">📥 匯入</button>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;" onchange="importFromExcel(event)">
+                <button class="btn-recovery" onclick="openRecoveryModal()">🕒 救援</button>
+                <button class="btn-danger" onclick="clearAllData()">🗑️ 清除</button>
+            </div>
+        </div>
+
+        <div class="tools-row">
+            <div class="filter-controls">
+                <span class="panel-label">🔍 篩選：</span>
+                <select id="flt_region" onchange="applyMainFilter()"><option value="">全部地區</option></select>
+                <select id="flt_project" onchange="applyMainFilter()"><option value="">全部專案</option></select>
+                <select id="flt_category" onchange="applyMainFilter()"><option value="">全部類別</option></select>
+                <select id="flt_macro" onchange="applyMainFilter()"><option value="">大製程</option></select>
+                <select id="flt_group" onchange="applyMainFilter()"><option value="">組別</option></select>
+                <input type="text" id="flt_keyword" placeholder="搜尋姓名/事項/小製程..." oninput="applyMainFilter()">
+                <button class="btn-small" onclick="clearMainFilter()">清除</button>
+            </div>
+
+            <div class="view-controls">
+                <span class="panel-label">👁️ 顯示：</span>
+                <label><input type="checkbox" id="toggleRegion" checked onchange="applyColumnToggle()"> 地區</label>
+                <label><input type="checkbox" id="toggleProject" checked onchange="applyColumnToggle()"> 專案</label>
+                <label><input type="checkbox" id="toggleCategory" checked onchange="applyColumnToggle()"> 類別</label>
+                <label><input type="checkbox" id="toggleMacro" checked onchange="applyColumnToggle()"> 大製程</label>
+                <label><input type="checkbox" id="toggleMicro" checked onchange="applyColumnToggle()"> 小製程</label>
+                <label><input type="checkbox" id="toggleGroup" checked onchange="applyColumnToggle()"> 組別</label>
+                <label><input type="checkbox" id="toggleName" checked onchange="applyColumnToggle()"> 姓名</label>
+                <label><input type="checkbox" id="toggleTask" checked onchange="applyColumnToggle()"> 主事項</label>
+                <label><input type="checkbox" id="toggleSubTask" checked onchange="applyColumnToggle()"> 小事項</label>
+            </div>
+        </div>
+    </div>
+    
+	<div class="table-container">
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th class="sortable col-region" onclick="handleSort('region')">地區</th>
+                    <th class="sortable col-project" onclick="handleSort('project')">專案</th>
+                    <th class="sortable col-category" style="background:#fff3e0;" onclick="handleSort('category')">類別</th>
+                    <th class="sortable col-macro" style="background:#e0f2f1;" onclick="handleSort('macro')">大製程</th>
+                    <th class="sortable col-micro" style="background:#e0f2f1;" onclick="handleSort('micro')">小製程</th>
+                    <th class="sortable col-group" onclick="handleSort('group')">組別</th>
+                    <th class="sortable col-name" onclick="handleSort('name')">姓名</th>
+                    <th class="sortable col-task" style="background:#e8f5e9;" onclick="handleSort('task')">主事項</th>
+                    <th class="sortable col-subtask" style="background:#e8f5e9;" onclick="handleSort('subTask')">小事項</th>
+                    <th class="sortable" onclick="handleSort('m1')">1月</th><th class="sortable" onclick="handleSort('m2')">2月</th>
+                    <th class="sortable" onclick="handleSort('m3')">3月</th><th class="sortable" onclick="handleSort('m4')">4月</th>
+                    <th class="sortable" onclick="handleSort('m5')">5月</th><th class="sortable" onclick="handleSort('m6')">6月</th>
+                    <th class="sortable" onclick="handleSort('m7')">7月</th><th class="sortable" onclick="handleSort('m8')">8月</th>
+                    <th class="sortable" onclick="handleSort('m9')">9月</th><th class="sortable" onclick="handleSort('m10')">10月</th>
+                    <th class="sortable" onclick="handleSort('m11')">11月</th><th class="sortable" onclick="handleSort('m12')">12月</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+	
+    <div id="customContextMenu" class="context-menu" style="display: none;">
+        <div id="cm-edit" class="context-menu-item" onclick="cmAction('edit')">✏️ 編輯資料</div>
+        <div id="cm-delete" class="context-menu-item danger" onclick="cmAction('delete')">🗑️ 刪除資料</div>
+    </div>
+
+    <div id="recoveryModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3>🕒 歷史資料與設定救援</h3>
+                <span class="close" onclick="closeModal('recoveryModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="color:#555; font-size:14px; margin-bottom: 15px;">系統已掃描您在此電腦上所有曾經輸入過的版本。您可以選擇要<b>「直接覆蓋」</b>回到當時狀態，或是將該版本的總表資料與關聯資料庫<b>「附加合併」</b>到當前系統中。</p>
+                <div style="max-height: 400px; overflow-y:auto;">
+                    <table class="db-table" id="recoveryTable">
+                        <thead><tr><th>版本名稱 (內部 Key)</th><th>總表資料筆數</th><th style="width: 180px;">操作</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dataModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">新增/編輯資料 <span style="font-size:14px;color:#f57f17;font-weight:normal;margin-left:10px;">(請依序解鎖選擇)</span></h3>
+                <span class="close" onclick="closeModal('dataModal')">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <input type="hidden" id="editIndex" value="-1">
+                
+                <div class="relation-container" style="background-color: #fff8e1; border-color: #ffe082;">
+                    <div class="check-group">
+                        <label class="title" style="color:#f57f17;">1. 選擇地區 <span>📌 必選</span></label>
+                        <div id="cl_region" class="check-list"></div>
+                    </div>
+                    <div class="check-group" id="block_project" style="display: none;">
+                        <label class="title" style="color:#f57f17;">2. 選擇專案 <span>📌 必選</span></label>
+                        <div id="cl_project" class="check-list"></div>
+                    </div>
+                    <div class="check-group" id="block_category" style="display: none;">
+                        <label class="title" style="color:#f57f17;">3. 選擇類別 <span>📌 必選</span></label>
+                        <div id="cl_category" class="check-list"></div>
+                    </div>
+                </div>
+
+                <div id="block_details" class="step-hidden">
+                    <div class="relation-container" style="background-color: #e0f2f1; border-color: #80cbc4;">
+                        <div class="check-group">
+                            <label class="title" style="color:#00695c;">選擇大製程</label>
+                            <div id="cl_macro" class="check-list"></div>
+                        </div>
+                        <div class="check-group">
+                            <label class="title" style="color:#00695c;">
+                                選擇小製程 
+                                <span style="font-size:12px; color:#c62828; font-weight:bold; margin-left:8px;">※ 可多選、可留空</span>
+                            </label>
+                            <div id="cl_micro" class="check-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="relation-container" style="background-color: #e8f5e9; border-color: #a5d6a7;">
+                        <div class="check-group">
+                            <label class="title" style="color:#2e7d32;">
+                                選擇主事項
+                                <span style="font-size:12px; color:#666; font-weight:normal; margin-left: 8px;">※ 獨立於製程，非必填</span>
+                            </label>
+                            <div id="cl_task" class="check-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;"></div>
+                        </div>
+                        <div class="check-group">
+                            <label class="title" style="color:#2e7d32;">
+                                選擇綁定的小事項
+                                <span style="font-size:12px; color:#c62828; font-weight:bold; margin-left:8px;">※ 可多選、可留空</span>
+                            </label>
+                            <div id="cl_subTask" class="check-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;"></div>
+                        </div>
+                    </div>
+					
+                    <div class="relation-container" style="background-color: #f0f8ff;">
+                        <div class="check-group"><label class="title">選擇組別</label><div id="cl_group" class="check-list"></div></div>
+                        <div class="check-group" style="flex:2;">
+                            <label class="title">
+                                選擇姓名
+                                <span style="font-size:12px; color:#c62828; font-weight:bold; margin-left:8px;">※ 顯示目前總任務數供參考，可多選</span>
+                            </label>
+                            <div id="cl_name" class="check-list" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;"></div>
+                        </div>
+                    </div>
+
+                    <hr style="border-top: 1px dashed #ccc; margin: 15px 0;">
+                    
+                    <label style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between; color:#00695c;">
+                        <span>各人投入權重分配 (最大1, 最小0.1, 間距0.05)</span>
+                        <span style="font-size: 12px; color: #f57f17;">💡 勾選多位姓名後，可在此處分別輸入權重，儲存時系統會自動建立多筆資料。</span>
+                    </label>
+                    
+                    <div class="gantt-wrapper">
+                        <div class="gantt-scroll-area">
+                            <div id="gantt_container_parent" class="gantt-container-parent">
+                                <div class="gantt-container" id="gantt_container">
+                                    <div class="gantt-grid">
+                                        <div></div><div></div><div></div><div></div><div></div><div></div>
+                                        <div></div><div></div><div></div><div></div><div></div><div></div>
+                                    </div>
+                                    <div id="gantt_bars" style="width: 100%; height: 100%; position: absolute; top:0; left:0; overflow:hidden;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="workload-header-grid">
+                                <div class="workload-header" style="background:transparent; justify-content:center;">人員</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 1月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(1)">1月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 2月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(2)">2月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 3月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(3)">3月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 4月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(4)">4月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 5月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(5)">5月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 6月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(6)">6月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 7月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(7)">7月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 8月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(8)">8月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 9月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(9)">9月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 10月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(10)">10月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 11月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(11)">11月</div>
+                                <div class="workload-header" style="cursor:pointer;" title="點擊清除所有人 12月 分配" onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#eee'" onclick="clearMonthWorkload(12)">12月</div>
+                            </div>
+
+                            <div id="workload_rows" class="workload-rows-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('dataModal')">取消</button>
+                <button id="btn_save_data" onclick="saveDataRow()">💾 確認儲存至總表</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dbModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ 管理關聯資料庫</h3>
+                <span class="close" onclick="closeModal('dbModal')">&times;</span>
+            </div>
+            
+            <datalist id="dl_groups"></datalist><datalist id="dl_names"></datalist>
+            <datalist id="dl_regions"></datalist><datalist id="dl_projects"></datalist>
+            <datalist id="dl_macros"></datalist><datalist id="dl_micros"></datalist>
+            <datalist id="dl_tasks"></datalist>
+
+            <div class="db-tabs">
+                <button class="db-tab-btn active" onclick="switchDbTab('rp')">1. 地區 ↔ 專案</button>
+                <button class="db-tab-btn" onclick="switchDbTab('milestone')">2. 階段時程</button>
+                <button class="db-tab-btn" style="background:#e0f2f1; color:#00695c;" onclick="switchDbTab('process')">3. 大小製程設定</button>
+                <button class="db-tab-btn" onclick="switchDbTab('group')">4. 組別 ➔ 姓名</button>
+                <button class="db-tab-btn" style="background:#e8f5e9; color:#2e7d32;" onclick="switchDbTab('task')">5. 事項綁定 (主↔小)</button>
+            </div>
+
+            <div id="tab_rp" class="db-tab-content active">
+                <div class="action-bar" style="background: #fff8e1; border-color: #ffe082;">
+                    <span class="action-label" style="color:#f57f17;">🔍/➕ 地區專案：</span>
+                    <input type="text" list="dl_regions" id="rp_region" placeholder="輸入地區..." oninput="applyRpFilter()">
+                    <input type="text" list="dl_projects" id="rp_project" placeholder="輸入專案..." oninput="applyRpFilter()">
+                    <button class="btn-cancel" onclick="resetRpFilter()">清除</button>
+                    <button onclick="addDbRpLink()" style="background:#ff9800;">新增</button>
+                </div>
+                <div style="max-height: 350px; overflow-y:auto;">
+                    <table class="db-table">
+                        <thead><tr><th>地區</th><th>專案</th><th style="width:100px;">操作</th></tr></thead>
+                        <tbody id="db_rp_list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab_milestone" class="db-tab-content">
+                <div class="action-bar" style="background: #e1f5fe; border: 1px solid #81d4fa;">
+                    <span class="action-label" style="color:#0277bd;">🎯 目標與時程：</span>
+                    <select id="ms_rp" onchange="applyMilestoneFilter()" style="flex: 2;"><option value="">-- 地區/專案 --</option></select>
+                    <select id="ms_category" onchange="applyMilestoneFilter()" style="max-width: 100px;">
+                        <option value="">類別</option><option value="NPI">NPI</option><option value="Ops.">Ops.</option>
+                    </select>
+                    <input type="text" id="ms_phase" placeholder="階段(如P2)" style="max-width: 110px;">
+                    <input type="date" id="ms_start" title="開始日期">
+                    <span style="color:#888;">~</span>
+                    <input type="date" id="ms_end" title="結束日期">
+                    <button class="btn-cancel" onclick="resetMilestoneFilter()">清除</button>
+                    <button onclick="addDbMilestone()" style="background:#0288d1;">新增</button>
+                </div>
+                <div style="max-height: 350px; overflow-y:auto;">
+                    <table class="db-table">
+                        <thead><tr><th>地區</th><th>專案</th><th>類別</th><th>階段名稱</th><th>開始時間</th><th>結束時間</th><th style="width:100px;">操作</th></tr></thead>
+                        <tbody id="db_milestone_list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab_process" class="db-tab-content">
+                <div class="action-bar" style="background: #e0f2f1; border-color: #b2dfdb;">
+                    <span class="action-label" style="color:#00695c;">⚙️ 製程關聯：</span>
+                    <input type="text" list="dl_macros" id="proc_macro" placeholder="輸入大製程 (如 SMT)..." oninput="applyProcessFilter()">
+                    <input type="text" list="dl_micros" id="proc_micro" placeholder="輸入小製程 (如 DIP)..." oninput="applyProcessFilter()">
+                    <button class="btn-cancel" onclick="resetProcessFilter()">清除</button>
+                    <button onclick="addDbProcessLink()" style="background:#00897b;">新增</button>
+                </div>
+                <div style="max-height: 350px; overflow-y:auto;">
+                    <table class="db-table">
+                        <thead><tr><th>大製程</th><th>小製程</th><th style="width:100px;">操作</th></tr></thead>
+                        <tbody id="db_process_list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab_group" class="db-tab-content">
+                <div class="action-bar" style="background: #fce4ec; border-color: #f8bbd0;">
+                    <span class="action-label" style="color:#c2185b;">👥 組別姓名：</span>
+                    <input type="text" list="dl_groups" id="grp_group" placeholder="輸入組別..." oninput="applyGroupFilter()">
+                    <input type="text" list="dl_names" id="grp_name" placeholder="輸入姓名(可多筆逗號分隔)..." oninput="applyGroupFilter()">
+                    <button class="btn-cancel" onclick="resetGroupFilter()">清除</button>
+                    <button onclick="addDbGroupLink()" style="background:#e91e63;">新增</button>
+                </div>
+                <div style="max-height: 350px; overflow-y:auto;">
+                    <table class="db-table">
+                        <thead><tr><th>組別</th><th>姓名</th><th style="width:100px;">操作</th></tr></thead>
+                        <tbody id="db_group_list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab_task" class="db-tab-content">
+                <div class="action-bar" style="background: #e8f5e9; border-color: #a5d6a7;">
+                    <span class="action-label" style="color:#2e7d32;">📋 事項綁定：</span>
+                    <input type="text" list="dl_tasks" id="task_main" placeholder="輸入主事項..." oninput="applyTaskFilter()">
+                    <input type="text" id="task_sub" placeholder="輸入小事項(可多筆逗號分隔)..." oninput="applyTaskFilter()">
+                    <button class="btn-cancel" onclick="resetTaskFilter()">清除</button>
+                    <button onclick="addDbTaskLink()" style="background:#4CAF50;">新增</button>
+                </div>
+                <div style="max-height: 350px; overflow-y:auto;">
+                    <table class="db-table">
+                        <thead><tr><th>主事項</th><th>綁定小事項</th><th style="width:100px;">操作</th></tr></thead>
+                        <tbody id="db_task_list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button onclick="closeModal('dbModal')">完成並關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editDbModal" class="modal" style="z-index: 1005;">
+        <div class="modal-content" style="max-width: 400px; margin-top: 10%;">
+            <div class="modal-header">
+                <h3>✏️ 編輯並連動更新總表</h3>
+                <span class="close" onclick="closeModal('editDbModal')">&times;</span>
+            </div>
+            <div class="modal-body" id="editDbBody"></div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('editDbModal')">取消</button>
+                <button onclick="saveDbEdit()" style="background:#ff9800;">💾 儲存並更新</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= 核心設定 =================
+        let mainTableData = [];
+        let db = { rpLinks: [], milestones: [], processLinks: [], groupLinks: [], taskLinks: [] };
+        let currentSelections = { group: "", name: [], region: "", project: "", category: "", macro: "", micro: [], task: "", subTask: [] };
+        let currentWorkloads = {};
+        let currentSort = { column: '', direction: 'asc' };
+        let cmTargetContext = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllStorage();
+            renderMainTable();
+            setupContextMenu();
+        });
+
+        // 🌟 資料載入與自動遷移
+        function loadAllStorage() {
+            let savedData = localStorage.getItem('manpowerDataV28');
+            let savedDb = localStorage.getItem('manpowerDbV28');
+
+            if (savedData) mainTableData = JSON.parse(savedData);
+            if (savedDb) db = JSON.parse(savedDb);
+
+            if (!db.rpLinks) db.rpLinks = []; 
+            if (!db.milestones) db.milestones = [];
+            if (!db.processLinks) db.processLinks = [];
+            if (!db.groupLinks) db.groupLinks = []; 
+            
+            if (!db.taskLinks) {
+                db.taskLinks = [];
+                if (db.tasks && db.tasks.length > 0) {
+                    db.tasks.forEach(t => {
+                        db.taskLinks.push({task: t, subTask: ""});
+                    });
+                }
+            }
+        }
+
+        function saveAllStorage() {
+            localStorage.setItem('manpowerDataV28', JSON.stringify(mainTableData));
+            localStorage.setItem('manpowerDbV28', JSON.stringify(db));
+            updateFilterDropdowns();
+        }
+
+        // ================= 🕒 歷史版本救援 =================
+        function openRecoveryModal() {
+            const tbody = document.querySelector('#recoveryTable tbody'); tbody.innerHTML = '';
+            let foundAny = false;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('manpowerData')) {
+                    const suffix = key.replace('manpowerData', ''); 
+                    let versionDisplay = suffix === '' ? 'V1 (最早期)' : suffix;
+                    const dbKey = 'manpowerDb' + suffix;
+                    try {
+                        const dataObj = JSON.parse(localStorage.getItem(key));
+                        if (dataObj && Array.isArray(dataObj)) {
+                            foundAny = true;
+                            const isCurrent = (key === 'manpowerDataV28');
+                            tbody.innerHTML += `<tr style="${isCurrent ? 'background-color:#f0f8ff;' : ''}">
+                                    <td style="font-weight:bold; color:#0277bd;">${versionDisplay} ${isCurrent ? '<span style="font-size:10px;color:red;">(當前使用)</span>' : ''}</td>
+                                    <td>${dataObj.length} 筆總表資料</td>
+                                    <td>
+                                        <button class="btn-danger" style="padding: 4px 8px; font-size: 12px; margin-bottom: 2px;" onclick="recoverData('${key}', '${dbKey}', 'overwrite')">完全覆蓋載入</button>
+                                        <button class="btn-import" style="padding: 4px 8px; font-size: 12px;" onclick="recoverData('${key}', '${dbKey}', 'merge')">資料與設定附加合併</button>
+                                    </td>
+                                </tr>`;
+                        }
+                    } catch(e) {}
+                }
+            }
+            if(!foundAny) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;">抱歉，未偵測到歷史紀錄。</td></tr>';
+            document.getElementById('recoveryModal').style.display = 'block';
+        }
+
+        function recoverData(dataKey, dbKey, mode) {
+            try {
+                const oldData = JSON.parse(localStorage.getItem(dataKey) || '[]');
+                const oldDb = JSON.parse(localStorage.getItem(dbKey) || '{}');
+                
+                if(!oldDb.rpLinks) oldDb.rpLinks = []; if(!oldDb.milestones) oldDb.milestones = [];
+                if(!oldDb.processLinks) oldDb.processLinks = [];
+                if(!oldDb.groupLinks) oldDb.groupLinks = []; 
+                if(!oldDb.taskLinks) {
+                    oldDb.taskLinks = [];
+                    if (oldDb.tasks) oldDb.tasks.forEach(t => oldDb.taskLinks.push({task: t, subTask: ""}));
+                }
+
+                if (mode === 'overwrite') {
+                    if (!confirm(`警告！這將會用 [${dataKey}] 的資料完全取代目前的畫面與設定。\n確定要繼續嗎？`)) return;
+                    mainTableData = oldData; db = oldDb;
+                    saveAllStorage(); renderMainTable(); closeModal('recoveryModal');
+                    alert(`✅ 已成功切換至 [${dataKey}] 的歷史狀態！`);
+                } else if (mode === 'merge') {
+                    if (!confirm(`這會將 [${dataKey}] 的總表資料與【資料庫設定】全部合併到當前系統中。\n確定嗎？`)) return;
+                    mainTableData = mainTableData.concat(oldData);
+                    oldDb.rpLinks.forEach(s => { if(!db.rpLinks.find(t => t.region === s.region && t.project === s.project)) db.rpLinks.push(s); });
+                    oldDb.milestones.forEach(s => { if(!db.milestones.find(t => t.region === s.region && t.project === s.project && t.category === s.category && t.phase === s.phase)) db.milestones.push(s); });
+                    oldDb.processLinks.forEach(s => { if(!db.processLinks.find(t => t.macro === s.macro && t.micro === s.micro)) db.processLinks.push(s); });
+                    oldDb.groupLinks.forEach(s => { if(!db.groupLinks.find(t => t.group === s.group && t.name === s.name)) db.groupLinks.push(s); });
+                    oldDb.taskLinks.forEach(s => { if(!db.taskLinks.find(t => t.task === s.task && t.subTask === s.subTask)) db.taskLinks.push(s); });
+                    saveAllStorage(); renderMainTable(); closeModal('recoveryModal');
+                    alert(`✅ 已成功附加總表資料，並完美合併了舊版的資料庫設定！`);
+                }
+            } catch(e) { alert('恢復資料時發生錯誤！'); }
+        }
+
+        // ================= 📂 真實 Excel 匯出與匯入 =================
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') { alert("找不到 Excel 引擎！"); return; }
+            if (mainTableData.length === 0 && db.rpLinks.length === 0) { alert("目前沒有資料可以匯出喔！"); return; }
+
+            const wb = XLSX.utils.book_new();
+
+            const wsMain = XLSX.utils.json_to_sheet(mainTableData.map(row => ({
+                "地區": row.region || "", "專案": row.project || "", "類別": row.category || "",
+                "大製程": row.macro || "", "小製程": row.micro || "",
+                "組別": row.group || "", "姓名": row.name || "", "主事項": row.task || "", "小事項": row.subTask || "",
+                "1月": row.m1 || "", "2月": row.m2 || "", "3月": row.m3 || "", "4月": row.m4 || "",
+                "5月": row.m5 || "", "6月": row.m6 || "", "7月": row.m7 || "", "8月": row.m8 || "",
+                "9月": row.m9 || "", "10月": row.m10 || "", "11月": row.m11 || "", "12月": row.m12 || ""
+            })));
+            XLSX.utils.book_append_sheet(wb, wsMain, "總表");
+
+            const wsRp = XLSX.utils.json_to_sheet(db.rpLinks.map(r => ({"地區": r.region, "專案": r.project})));
+            XLSX.utils.book_append_sheet(wb, wsRp, "地區與專案");
+
+            const wsMs = XLSX.utils.json_to_sheet(db.milestones.map(m => ({"地區": m.region, "專案": m.project, "類別": m.category, "階段名稱": m.phase, "開始日期": m.start, "結束日期": m.end})));
+            XLSX.utils.book_append_sheet(wb, wsMs, "階段時程");
+
+            const wsProc = XLSX.utils.json_to_sheet(db.processLinks.map(p => ({"大製程": p.macro, "小製程": p.micro})));
+            XLSX.utils.book_append_sheet(wb, wsProc, "大小製程");
+
+            const wsGrp = XLSX.utils.json_to_sheet(db.groupLinks.map(g => ({"組別": g.group, "姓名": g.name})));
+            XLSX.utils.book_append_sheet(wb, wsGrp, "組別姓名");
+
+            const wsTask = XLSX.utils.json_to_sheet(db.taskLinks.map(t => ({"主事項": t.task, "小事項": t.subTask})));
+            XLSX.utils.book_append_sheet(wb, wsTask, "主小事項");
+
+            XLSX.writeFile(wb, "人力需求總表_多頁籤備份.xlsx");
+        }
+
+        function importFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (typeof XLSX === 'undefined') { alert("找不到 Excel 引擎！"); event.target.value = ""; return; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(data, {type: 'array'});
+
+                    let newData = [], newRp = [], newMs = [], newProc = [], newGrp = [], newTaskLinks = [];
+
+                    if (wb.Sheets["總表"] || wb.Sheets[wb.SheetNames[0]]) {
+                        const sheet = wb.Sheets["總表"] || wb.Sheets[wb.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(sheet, {defval: ""});
+                        newData = rows.map(r => ({
+                            region: String(r["地區"]||"").trim(), project: String(r["專案"]||"").trim(), 
+                            category: String(r["類別"]||"").trim() === 'MP' ? 'Ops.' : String(r["類別"]||"").trim(),
+                            macro: String(r["大製程"]||"").trim(), micro: String(r["小製程"]||"").trim(),
+                            group: String(r["組別"]||"").trim(), name: String(r["姓名"]||"").trim(), 
+                            task: String(r["主事項"]||r["工作事項"]||"").trim(), subTask: String(r["小事項"]||"").trim(),
+                            m1: String(r["1月"]||"").trim(), m2: String(r["2月"]||"").trim(), m3: String(r["3月"]||"").trim(), m4: String(r["4月"]||"").trim(),
+                            m5: String(r["5月"]||"").trim(), m6: String(r["6月"]||"").trim(), m7: String(r["7月"]||"").trim(), m8: String(r["8月"]||"").trim(),
+                            m9: String(r["9月"]||"").trim(), m10: String(r["10月"]||"").trim(), m11: String(r["11月"]||"").trim(), m12: String(r["12月"]||"").trim()
+                        }));
+                    }
+
+                    if (wb.Sheets["地區與專案"]) newRp = XLSX.utils.sheet_to_json(wb.Sheets["地區與專案"], {defval: ""}).map(r => ({region: String(r["地區"]||"").trim(), project: String(r["專案"]||"").trim()})).filter(x => x.region && x.project);
+                    if (wb.Sheets["階段時程"]) newMs = XLSX.utils.sheet_to_json(wb.Sheets["階段時程"], {defval: ""}).map(r => ({
+                        region: String(r["地區"]||"").trim(), project: String(r["專案"]||"").trim(), 
+                        category: String(r["類別"]||"").trim() === 'MP' ? 'Ops.' : String(r["類別"]||"").trim(), 
+                        phase: String(r["階段名稱"]||"").trim(), start: String(r["開始日期"]||"").trim(), end: String(r["結束日期"]||"").trim()
+                    })).filter(x => x.region && x.project && x.phase);
+                    if (wb.Sheets["大小製程"]) newProc = XLSX.utils.sheet_to_json(wb.Sheets["大小製程"], {defval: ""}).map(r => ({macro: String(r["大製程"]||"").trim(), micro: String(r["小製程"]||"").trim()})).filter(x => x.macro);
+                    if (wb.Sheets["組別姓名"]) newGrp = XLSX.utils.sheet_to_json(wb.Sheets["組別姓名"], {defval: ""}).map(r => ({group: String(r["組別"]||"").trim(), name: String(r["姓名"]||"").trim()})).filter(x => x.group && x.name);
+                    
+                    if (wb.Sheets["主小事項"]) {
+                        newTaskLinks = XLSX.utils.sheet_to_json(wb.Sheets["主小事項"], {defval: ""}).map(r => ({task: String(r["主事項"]||"").trim(), subTask: String(r["小事項"]||"").trim()})).filter(x => x.task);
+                    } else if (wb.Sheets["工作事項"]) { 
+                        newTaskLinks = XLSX.utils.sheet_to_json(wb.Sheets["工作事項"], {defval: ""}).map(r => ({task: String(r["工作事項"]||"").trim(), subTask: ""})).filter(x => x.task);
+                    }
+
+                    if (mainTableData.length > 0 || db.rpLinks.length > 0) {
+                        const isOverwrite = confirm(`成功解析檔案。\n\n您要完全覆蓋現有的【總表與所有關聯設定】嗎？\n\n[確定] 完全覆蓋 (回到備份狀態)\n[取消] 附加合併 (保留現有，匯入新資料與新設定)`);
+                        if (isOverwrite) {
+                            mainTableData = newData;
+                            db = { rpLinks: newRp, milestones: newMs, processLinks: newProc, groupLinks: newGrp, taskLinks: newTaskLinks };
+                        } else {
+                            mainTableData = mainTableData.concat(newData);
+                            newRp.forEach(s => { if(!db.rpLinks.find(t=>t.region===s.region && t.project===s.project)) db.rpLinks.push(s); });
+                            newMs.forEach(s => { if(!db.milestones.find(t=>t.region===s.region && t.project===s.project && t.category===s.category && t.phase===s.phase)) db.milestones.push(s); });
+                            newProc.forEach(s => { if(!db.processLinks.find(t=>t.macro===s.macro && t.micro===s.micro)) db.processLinks.push(s); });
+                            newGrp.forEach(s => { if(!db.groupLinks.find(t=>t.group===s.group && t.name===s.name)) db.groupLinks.push(s); });
+                            newTaskLinks.forEach(s => { if(!db.taskLinks.find(t=>t.task===s.task && t.subTask===s.subTask)) db.taskLinks.push(s); });
+                        }
+                    } else {
+                        mainTableData = newData;
+                        db = { rpLinks: newRp, milestones: newMs, processLinks: newProc, groupLinks: newGrp, taskLinks: newTaskLinks };
+                    }
+
+                    saveAllStorage(); renderMainTable(); alert("✅ Excel 多頁籤匯入成功！");
+
+                } catch (error) { alert("讀取檔案發生錯誤。請確保格式正確。"); } finally { event.target.value = ""; }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ================= 📋 複製到剪貼簿 (Excel 友善格式) =================
+        function copyTableToClipboard() {
+            const table = document.getElementById('mainTable');
+            let tsvContent = '';
+
+            for (let i = 0; i < table.rows.length; i++) {
+                let row = table.rows[i];
+                let rowData = [];
+                for (let j = 0; j < row.cells.length; j++) {
+                    let cell = row.cells[j];
+                    if (window.getComputedStyle(cell).display !== 'none') {
+                        const inputElement = cell.querySelector('input');
+                        let text = inputElement ? inputElement.value : cell.innerText.replace(/\n/g, ' ').trim();
+                        rowData.push(text);
+                    }
+                }
+                tsvContent += rowData.join('\t') + '\n';
+            }
+            
+            navigator.clipboard.writeText(tsvContent).then(() => {
+                alert('✅ 已成功複製表格！\n請直接切換到 Excel 並按下貼上 (Ctrl+V)。');
+            }).catch(err => {
+                alert('複製失敗，您的瀏覽器可能不支援剪貼簿 API。');
+            });
+        }
+
+        // ================= 🔍 總表篩選邏輯 =================
+        function updateMainFilterOptions() {
+            if (!document.getElementById('flt_region')) return;
+
+            const preserveValue = (id) => document.getElementById(id).value;
+            const vals = {
+                region: preserveValue('flt_region'), project: preserveValue('flt_project'),
+                category: preserveValue('flt_category'), macro: preserveValue('flt_macro'),
+                group: preserveValue('flt_group')
+            };
+
+            const setOptions = (id, field, defaultText) => {
+                const el = document.getElementById(id);
+                const uniqueVals = [...new Set(mainTableData.map(r => r[field]).filter(v => v))];
+                el.innerHTML = `<option value="">${defaultText}</option>` + uniqueVals.map(v => `<option value="${v}">${v}</option>`).join('');
+                el.value = vals[field] || "";
+            };
+
+            setOptions('flt_region', 'region', '全部地區');
+            setOptions('flt_project', 'project', '全部專案');
+            setOptions('flt_category', 'category', '全部類別');
+            setOptions('flt_macro', 'macro', '全部大製程');
+            setOptions('flt_group', 'group', '全部組別');
+        }
+
+        function applyMainFilter() { renderMainTable(); }
+
+        function clearMainFilter() {
+            document.getElementById('flt_region').value = ""; document.getElementById('flt_project').value = "";
+            document.getElementById('flt_category').value = ""; document.getElementById('flt_macro').value = "";
+            document.getElementById('flt_group').value = ""; document.getElementById('flt_keyword').value = "";
+            renderMainTable();
+        }
+
+        // ================= 表頭點擊排序邏輯 =================
+        function handleSort(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            renderMainTable(); 
+        }
+
+        // ================= 自訂右鍵選單邏輯 =================
+        function setupContextMenu() {
+            const menu = document.getElementById('customContextMenu');
+            const table = document.getElementById('mainTable');
+
+            table.addEventListener('contextmenu', (e) => {
+                const tr = e.target.closest('tbody tr');
+                if (!tr) {
+                    menu.style.display = 'none';
+                    return;
+                }
+
+                e.preventDefault();
+
+                cmTargetContext = {
+                    type: tr.dataset.type,
+                    index: tr.dataset.index,
+                    groupIndices: tr.dataset.groupIndices
+                };
+
+                const editBtn = document.getElementById('cm-edit');
+                const delBtn = document.getElementById('cm-delete');
+
+                if (cmTargetContext.type === 'readonly') {
+                    editBtn.innerHTML = '🔒 視角加總中不可編輯';
+                    delBtn.innerHTML = '🔒 視角加總中不可刪除';
+                    editBtn.classList.add('disabled');
+                    delBtn.classList.add('disabled');
+                } else if (cmTargetContext.type === 'group') {
+                    editBtn.innerHTML = '✏️ 群組編輯';
+                    delBtn.innerHTML = '🗑️ 群組刪除';
+                    editBtn.classList.remove('disabled');
+                    delBtn.classList.remove('disabled');
+                } else {
+                    editBtn.innerHTML = '✏️ 編輯資料';
+                    delBtn.innerHTML = '🗑️ 刪除資料';
+                    editBtn.classList.remove('disabled');
+                    delBtn.classList.remove('disabled');
+                }
+
+                menu.style.display = 'block';
+                
+                let x = e.pageX;
+                let y = e.pageY;
+                if (x + menu.offsetWidth > window.innerWidth) x = window.innerWidth - menu.offsetWidth - 10;
+                if (y + menu.offsetHeight > window.innerHeight) y = window.innerHeight - menu.offsetHeight - 10;
+                
+                menu.style.left = x + 'px';
+                menu.style.top = y + 'px';
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('#customContextMenu')) return;
+                menu.style.display = 'none';
+            });
+        }
+
+        function cmAction(action) {
+            document.getElementById('customContextMenu').style.display = 'none';
+            if (!cmTargetContext || cmTargetContext.type === 'readonly') return;
+
+            if (cmTargetContext.type === 'single') {
+                const idx = parseInt(cmTargetContext.index);
+                if (action === 'edit') openDataModal(idx);
+                if (action === 'delete') deleteRow(idx);
+            } else if (cmTargetContext.type === 'group') {
+                const indices = JSON.parse(cmTargetContext.groupIndices);
+                if (action === 'edit') openGroupModal(indices);
+                if (action === 'delete') deleteGroup(indices);
+            }
+        }
+
+        // ================= 總表樞紐渲染與控制 =================
+        function applyColumnToggleDisplay(showRegion, showProject, showCategory, showMacro, showMicro, showGroup, showName, showTask, showSubTask) {
+            const toggleCol = (className, isShow) => document.querySelectorAll(className).forEach(el => el.style.display = isShow ? '' : 'none');
+            toggleCol('.col-region', showRegion);
+            toggleCol('.col-project', showProject);
+            toggleCol('.col-category', showCategory);
+            toggleCol('.col-macro', showMacro);
+            toggleCol('.col-micro', showMicro);
+            toggleCol('.col-group', showGroup);
+            toggleCol('.col-name', showName);
+            toggleCol('.col-task', showTask);
+            toggleCol('.col-subtask', showSubTask);
+        }
+
+        function applyColumnToggle() { renderMainTable(); }
+
+        function renderMainTable() {
+            updateMainFilterOptions(); 
+            const tbody = document.querySelector('#mainTable tbody'); tbody.innerHTML = '';
+            
+            let tfoot = document.querySelector('#mainTable tfoot');
+            if (!tfoot) {
+                tfoot = document.createElement('tfoot');
+                document.getElementById('mainTable').appendChild(tfoot);
+            }
+            tfoot.innerHTML = '';
+            
+            const showRegion = document.getElementById('toggleRegion').checked;
+            const showProject = document.getElementById('toggleProject').checked;
+            const showCategory = document.getElementById('toggleCategory').checked;
+            const showMacro = document.getElementById('toggleMacro').checked;
+            const showMicro = document.getElementById('toggleMicro').checked;
+            const showGroup = document.getElementById('toggleGroup').checked;
+            const showName = document.getElementById('toggleName').checked;
+            const showTask = document.getElementById('toggleTask').checked;
+            const showSubTask = document.getElementById('toggleSubTask').checked;
+
+            if(mainTableData.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="21" style="color:#888; padding: 20px;">目前是空的，請點擊上方「歷史版本救援」找回舊資料。</td></tr>'; 
+                applyColumnToggleDisplay(showRegion, showProject, showCategory, showMacro, showMicro, showGroup, showName, showTask, showSubTask);
+                updateStickyColumns();
+                return; 
+            }
+
+            // --- 篩選資料過濾階段 ---
+            const f_reg = document.getElementById('flt_region').value;
+            const f_proj = document.getElementById('flt_project').value;
+            const f_cat = document.getElementById('flt_category').value;
+            const f_mac = document.getElementById('flt_macro').value;
+            const f_grp = document.getElementById('flt_group').value;
+            const f_kw = document.getElementById('flt_keyword').value.toLowerCase();
+
+            let filteredData = mainTableData.filter((row, originalIndex) => {
+                row._originalIndex = originalIndex; 
+                if (f_reg && row.region !== f_reg) return false;
+                if (f_proj && row.project !== f_proj) return false;
+                if (f_cat && row.category !== f_cat) return false;
+                if (f_mac && row.macro !== f_mac) return false;
+                if (f_grp && row.group !== f_grp) return false;
+                
+                if (f_kw) {
+                    const searchStr = `${row.name||''} ${row.micro||''} ${row.task||''} ${row.subTask||''}`.toLowerCase();
+                    if (!searchStr.includes(f_kw)) return false;
+                }
+                return true;
+            });
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="21" style="color:#888; padding: 20px;">查無符合篩選條件的資料，請嘗試清除篩選。</td></tr>';
+                applyColumnToggleDisplay(showRegion, showProject, showCategory, showMacro, showMicro, showGroup, showName, showTask, showSubTask);
+                updateStickyColumns();
+                return;
+            }
+
+            // --- 樞紐聚合計算階段 ---
+            const isAggregated = !showRegion || !showProject || !showCategory || !showMacro || !showMicro || !showGroup || !showName || !showTask || !showSubTask;
+            const isOnlyNameHidden = !showName && showRegion && showProject && showCategory && showMacro && showMicro && showGroup && showTask && showSubTask; 
+            let displayData = [];
+
+            if (!isAggregated) {
+                displayData = filteredData.map(row => ({ ...row, originalIndex: row._originalIndex }));
+            } else {
+                let grouped = {};
+                filteredData.forEach((row) => { 
+                    let key = [
+                        showRegion ? (row.region || "") : "",
+                        showProject ? (row.project || "") : "",
+                        showCategory ? (row.category || "") : "",
+                        showMacro ? (row.macro || "") : "",
+                        showMicro ? (row.micro || "") : "",
+                        showGroup ? (row.group || "") : "",
+                        showName ? (row.name || "") : "",
+                        showTask ? (row.task || "") : "",
+                        showSubTask ? (row.subTask || "") : ""
+                    ].join('|');
+
+                    if (!grouped[key]) {
+                        grouped[key] = {
+                            region: showRegion ? row.region : "-",
+                            project: showProject ? row.project : "-",
+                            category: showCategory ? row.category : "-",
+                            macro: showMacro ? row.macro : "-",
+                            micro: showMicro ? row.micro : "-",
+                            group: showGroup ? row.group : "-",
+                            name: showName ? row.name : "-",
+                            task: showTask ? row.task : "-",
+                            subTask: showSubTask ? row.subTask : "-",
+                            m1: 0, m2: 0, m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0,
+                            isGrouped: true,
+                            originalIndices: [] 
+                        };
+                    }
+                    
+                    grouped[key].originalIndices.push(row._originalIndex); 
+
+                    for(let m=1; m<=12; m++) {
+                        let val = parseFloat(row['m'+m]) || 0;
+                        grouped[key]['m'+m] += val;
+                    }
+                });
+                
+                displayData = Object.values(grouped).map(row => {
+                    for(let m=1; m<=12; m++) {
+                        if (row['m'+m] > 0) row['m'+m] = Math.round(row['m'+m] * 100) / 100;
+                        else row['m'+m] = "";
+                    }
+                    return row;
+                });
+            }
+
+            // --- 點擊表頭排序處理階段 ---
+            if (typeof currentSort !== 'undefined' && currentSort.column) {
+                displayData.sort((a, b) => {
+                    let valA = a[currentSort.column] !== undefined && a[currentSort.column] !== "" ? a[currentSort.column] : null;
+                    let valB = b[currentSort.column] !== undefined && b[currentSort.column] !== "" ? b[currentSort.column] : null;
+
+                    if (valA === null && valB === null) return 0;
+                    if (valA === null) return 1;
+                    if (valB === null) return -1;
+
+                    if (currentSort.column.startsWith('m')) {
+                        valA = parseFloat(valA); valB = parseFloat(valB);
+                        return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+                    } else {
+                        let cmp = String(valA).localeCompare(String(valB), 'zh-TW');
+                        return currentSort.direction === 'asc' ? cmp : -cmp;
+                    }
+                });
+
+                document.querySelectorAll('th.sortable').forEach(th => {
+                    th.classList.remove('asc', 'desc');
+                    if (th.getAttribute('onclick') && th.getAttribute('onclick').includes(`'${currentSort.column}'`)) {
+                        th.classList.add(currentSort.direction);
+                    }
+                });
+            }
+
+            // --- 畫面繪製階段 ---
+            displayData.forEach((row) => {
+                let tr = document.createElement('tr');
+                
+                // 寫入資料屬性供右鍵選單使用
+                if (row.isGrouped) {
+                    if (isOnlyNameHidden) {
+                        tr.dataset.groupIndices = JSON.stringify(row.originalIndices);
+                        tr.dataset.type = 'group';
+                    } else {
+                        tr.dataset.type = 'readonly';
+                    }
+                } else {
+                    tr.dataset.index = row.originalIndex;
+                    tr.dataset.type = 'single';
+                }
+
+                tr.innerHTML += `<td class="col-region">${row.region || ""}</td>`;
+                tr.innerHTML += `<td class="col-project">${row.project || ""}</td>`;
+                
+                let catHtml = "";
+                if (row.category === 'NPI') catHtml = `<span class="tag-npi">NPI</span>`;
+                else if (row.category === 'Ops.') catHtml = `<span class="tag-mp">Ops.</span>`;
+                tr.innerHTML += `<td class="col-category">${catHtml || (row.category||"")}</td>`;
+                
+                tr.innerHTML += `<td class="col-macro">${row.macro || ""}</td>`;
+                tr.innerHTML += `<td class="col-micro">${row.micro || ""}</td>`;
+                tr.innerHTML += `<td class="col-group">${row.group || ""}</td>`;
+                tr.innerHTML += `<td class="col-name">${row.name || ""}</td>`;
+                tr.innerHTML += `<td class="col-task">${row.task || ""}</td>`;
+                tr.innerHTML += `<td class="col-subtask">${row.subTask || ""}</td>`;
+                
+                ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9', 'm10', 'm11', 'm12'].forEach(k => {
+                    if (row.isGrouped) {
+                        tr.innerHTML += `<td>${row[k] || ""}</td>`;
+                    } else {
+                        tr.innerHTML += `<td><input type="number" class="inline-workload-input" value="${row[k] || ''}" min="0.1" max="1" step="0.05" onchange="updateInlineWorkload(${row.originalIndex}, '${k}', this.value)"></td>`;
+                    }
+                });
+                
+                tbody.appendChild(tr);
+            });
+
+            // --- 計算並生成智慧總計行 ---
+            let totals = { m1: 0, m2: 0, m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
+            displayData.forEach(row => {
+                for(let i=1; i<=12; i++) totals['m'+i] += (parseFloat(row['m'+i]) || 0);
+            });
+
+            const visibleCols = [
+                {id: 'region', show: showRegion}, {id: 'project', show: showProject}, {id: 'category', show: showCategory},
+                {id: 'macro', show: showMacro}, {id: 'micro', show: showMicro}, {id: 'group', show: showGroup},
+                {id: 'name', show: showName}, {id: 'task', show: showTask}, {id: 'subTask', show: showSubTask}
+            ];
+            const firstVisibleId = visibleCols.find(c => c.show)?.id || 'none'; 
+
+            const getFooterCell = (id, className) => {
+                let text = id === firstVisibleId ? '當前總計 ➔' : '';
+                let align = id === firstVisibleId ? 'right' : 'center';
+                return `<td class="${className}" style="background-color: #ffe082; font-weight: bold; color: #d84315; letter-spacing: 1px; text-align: ${align};">${text}</td>`;
+            };
+
+            let footerHtml = `<tr>
+                ${getFooterCell('region', 'col-region')}
+                ${getFooterCell('project', 'col-project')}
+                ${getFooterCell('category', 'col-category')}
+                ${getFooterCell('macro', 'col-macro')}
+                ${getFooterCell('micro', 'col-micro')}
+                ${getFooterCell('group', 'col-group')}
+                ${getFooterCell('name', 'col-name')}
+                ${getFooterCell('task', 'col-task')}
+                ${getFooterCell('subTask', 'col-subtask')}`;
+                
+            for(let i=1; i<=12; i++) {
+                let sum = Math.round(totals['m'+i] * 100) / 100;
+                footerHtml += `<td style="font-weight: bold; color: #d84315; background-color: #fff8e1; font-size: 15px;">${sum > 0 ? sum : ""}</td>`;
+            }
+            footerHtml += `</tr>`;
+            tfoot.innerHTML = footerHtml;
+
+            applyColumnToggleDisplay(showRegion, showProject, showCategory, showMacro, showMicro, showGroup, showName, showTask, showSubTask);
+            updateStickyColumns();
+        }
+
+        // ================= 動態凍結欄位邏輯 =================
+        function updateStickyColumns() {
+            requestAnimationFrame(() => {
+                const table = document.getElementById('mainTable');
+                if (!table) return;
+                const theadTr = table.querySelector('thead tr');
+                const tfootTr = table.querySelector('tfoot tr');
+                const tbodyTrs = table.querySelectorAll('tbody tr');
+
+                if (!theadTr) return;
+
+                let currentLeft = 0;
+                let lastVisibleIndex = -1;
+
+                for (let i = 0; i <= 8; i++) {
+                    if (window.getComputedStyle(theadTr.cells[i]).display !== 'none') {
+                        lastVisibleIndex = i;
+                    }
+                }
+
+                for (let i = 0; i <= 8; i++) {
+                    const isVisible = window.getComputedStyle(theadTr.cells[i]).display !== 'none';
+                    
+                    const processCell = (cell, isHeaderOrFooter) => {
+                        if (!cell) return;
+                        if (isVisible) {
+                            cell.style.position = 'sticky';
+                            cell.style.left = currentLeft + 'px';
+                            cell.style.zIndex = isHeaderOrFooter ? '12' : '2'; 
+                            if (!isHeaderOrFooter) cell.style.backgroundColor = 'inherit'; 
+                            
+                            if (i === lastVisibleIndex) {
+                                cell.style.borderRight = '2px solid #90caf9';
+                                cell.style.boxShadow = '2px 0 5px rgba(0,0,0,0.08)';
+                            } else {
+                                cell.style.borderRight = '1px solid #ddd';
+                                cell.style.boxShadow = 'none';
+                            }
+                        } else {
+                            cell.style.position = ''; cell.style.left = ''; cell.style.zIndex = '';
+                            cell.style.borderRight = ''; cell.style.boxShadow = '';
+                        }
+                    };
+
+                    processCell(theadTr.cells[i], true);
+                    if (tfootTr) processCell(tfootTr.cells[i], true);
+                    tbodyTrs.forEach(tr => processCell(tr.cells[i], false));
+
+                    if (isVisible) currentLeft += theadTr.cells[i].offsetWidth;
+                }
+            });
+        }
+        window.addEventListener('resize', updateStickyColumns);
+
+        function deleteRow(i) { if(confirm("確定刪除？")) { mainTableData.splice(i, 1); saveAllStorage(); renderMainTable(); } }
+        
+        function deleteGroup(indices) {
+            if(confirm(`確定要將這 ${indices.length} 筆資料一起刪除嗎？`)) {
+                indices.sort((a,b) => b - a).forEach(idx => {
+                    mainTableData.splice(idx, 1);
+                });
+                saveAllStorage(); renderMainTable();
+            }
+        }
+        
+        function clearAllData() { if(confirm("這將會清除總表上的所有資料，確定嗎？")) { mainTableData = []; saveAllStorage(); renderMainTable(); } }
+
+        // ================= 新增/編輯 Modal 控制 =================
+        function openDataModal(index) {
+            document.getElementById('editIndex').value = index;
+            currentSelections = { group: "", name: [], region: "", project: "", category: "", macro: "", micro: [], task: "", subTask: [] };
+            currentWorkloads = {};
+
+            if (index !== -1) {
+                const row = mainTableData[index];
+                currentSelections.group = row.group || "";
+                currentSelections.name = row.name ? [row.name] : [];
+                currentSelections.region = row.region || "";
+                currentSelections.project = row.project || "";
+                currentSelections.category = row.category || "";
+                currentSelections.macro = row.macro || "";
+                currentSelections.micro = row.micro ? row.micro.split(',').map(s=>s.trim()).filter(s=>s) : [];
+                currentSelections.task = row.task || "";
+                currentSelections.subTask = row.subTask ? row.subTask.split(',').map(s=>s.trim()).filter(s=>s) : [];
+
+                let n = row.name || '未指定姓名';
+                currentWorkloads[n] = {};
+                ['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12'].forEach(m => currentWorkloads[n][m] = row[m] || "");
+            }
+            
+            checkWaterfallState(); 
+            buildCheckLists();
+            document.getElementById('dataModal').style.display = 'block';
+        }
+
+        function openGroupModal(indices) {
+            document.getElementById('editIndex').value = JSON.stringify(indices);
+            currentSelections = { group: "", name: [], region: "", project: "", category: "", macro: "", micro: [], task: "", subTask: [] };
+            currentWorkloads = {};
+
+            const firstRow = mainTableData[indices[0]];
+            currentSelections.group = firstRow.group || "";
+            currentSelections.region = firstRow.region || "";
+            currentSelections.project = firstRow.project || "";
+            currentSelections.category = firstRow.category || "";
+            currentSelections.macro = firstRow.macro || "";
+            currentSelections.micro = firstRow.micro ? firstRow.micro.split(',').map(s=>s.trim()).filter(s=>s) : [];
+            currentSelections.task = firstRow.task || "";
+            currentSelections.subTask = firstRow.subTask ? firstRow.subTask.split(',').map(s=>s.trim()).filter(s=>s) : [];
+
+            indices.forEach(idx => {
+                const row = mainTableData[idx];
+                const n = row.name || "";
+                if (n && !currentSelections.name.includes(n)) currentSelections.name.push(n);
+                
+                let targetN = n === "" ? "未指定姓名" : n;
+                if (!currentWorkloads[targetN]) currentWorkloads[targetN] = {};
+                ['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12'].forEach(m => {
+                    currentWorkloads[targetN][m] = row[m] || "";
+                });
+            });
+            
+            checkWaterfallState(); 
+            buildCheckLists();
+            document.getElementById('dataModal').style.display = 'block';
+        }
+
+        function checkWaterfallState() {
+            const hasRegion = currentSelections.region !== "";
+            const hasProject = currentSelections.project !== "";
+            const hasCategory = currentSelections.category !== "";
+            
+            const blockProject = document.getElementById('block_project');
+            const blockCategory = document.getElementById('block_category');
+            const blockDetails = document.getElementById('block_details');
+            const btnSave = document.getElementById('btn_save_data');
+
+            blockProject.style.display = hasRegion ? 'flex' : 'none';
+            blockCategory.style.display = (hasRegion && hasProject) ? 'flex' : 'none';
+
+            if (hasRegion && hasProject && hasCategory) {
+                blockDetails.classList.remove('step-hidden');
+                btnSave.disabled = false; btnSave.style.opacity = 1;
+            } else {
+                blockDetails.classList.add('step-hidden');
+                btnSave.disabled = true; btnSave.style.opacity = 0.5;
+            }
+        }
+
+        function getPersonTaskCount(name) {
+            let count = 0;
+            const editIndexVal = document.getElementById('editIndex').value;
+            let skipIndices = [];
+            if (editIndexVal && editIndexVal.startsWith('[')) {
+                skipIndices = JSON.parse(editIndexVal);
+            } else if (editIndexVal) {
+                const idx = parseInt(editIndexVal);
+                if (idx !== -1) skipIndices = [idx];
+            }
+
+            mainTableData.forEach((row, idx) => {
+                if (skipIndices.includes(idx)) return; 
+                if (row.name === name) count++;
+            });
+            return count;
+        }
+
+        function buildCheckLists() {
+            const allGroups = [...new Set(db.groupLinks.map(l => l.group))];
+            let allowedNames = [];
+            if (currentSelections.group) {
+                allowedNames = db.groupLinks.filter(l => l.group === currentSelections.group).map(l => l.name);
+            }
+            
+            let validRps = db.rpLinks;
+            if (currentSelections.region) validRps = validRps.filter(l => l.region === currentSelections.region);
+            if (currentSelections.project) validRps = validRps.filter(l => l.project === currentSelections.project);
+
+            const allMacros = [...new Set(db.processLinks.map(l => l.macro))];
+            let allowedMicros = [];
+            if (currentSelections.macro) {
+                allowedMicros = db.processLinks.filter(l => l.macro === currentSelections.macro).map(l => l.micro);
+            }
+
+            let allowedCategories = null; 
+            if (currentSelections.region && currentSelections.project) {
+                const msForRp = db.milestones.filter(m => m.region === currentSelections.region && m.project === currentSelections.project);
+                if (msForRp.length > 0) {
+                    allowedCategories = [...new Set(msForRp.map(m => m.category))];
+                    if (currentSelections.category && !allowedCategories.includes(currentSelections.category)) {
+                        currentSelections.category = "";
+                        setTimeout(checkWaterfallState, 0);
+                    }
+                }
+            }
+
+            const allTasks = [...new Set(db.taskLinks.map(l => l.task))];
+            let allowedSubTasks = [];
+            if (currentSelections.task) {
+                allowedSubTasks = db.taskLinks.filter(l => l.task === currentSelections.task).map(l => l.subTask).filter(s => s !== "");
+            }
+
+            renderList('cl_region', 'region', [...new Set(db.rpLinks.map(l=>l.region))], currentSelections.region, [...new Set(validRps.map(l=>l.region))]);
+            renderList('cl_project', 'project', [...new Set(db.rpLinks.map(l=>l.project))], currentSelections.project, [...new Set(validRps.map(l=>l.project))]);
+            renderList('cl_category', 'category', ['NPI', 'Ops.'], currentSelections.category, allowedCategories);
+            
+            renderList('cl_macro', 'macro', allMacros, currentSelections.macro, null);
+            if (!currentSelections.macro) {
+                document.getElementById('cl_micro').innerHTML = '<span style="color:#f57c00; font-size:13px; font-weight:bold; grid-column: 1 / -1; margin-top: 5px;">🔒 請先選擇左側的「大製程」以解鎖小製程</span>';
+            } else {
+                renderList('cl_micro', 'micro', [...new Set(allowedMicros)], currentSelections.micro, null);
+            }
+
+            renderList('cl_task', 'task', allTasks, currentSelections.task, null);
+            if (!currentSelections.task) {
+                document.getElementById('cl_subTask').innerHTML = '<span style="color:#f57c00; font-size:13px; font-weight:bold; grid-column: 1 / -1; margin-top: 5px;">🔒 請先選擇左側的「主事項」以解鎖小事項</span>';
+            } else {
+                renderList('cl_subTask', 'subTask', [...new Set(allowedSubTasks)], currentSelections.subTask, null);
+            }
+
+            renderList('cl_group', 'group', allGroups, currentSelections.group, null);
+            if (!currentSelections.group) {
+                document.getElementById('cl_name').innerHTML = '<span style="color:#f57c00; font-size:13px; font-weight:bold; grid-column: 1 / -1; margin-top: 5px;">🔒 請先選擇左側的「組別」以解鎖姓名選單</span>';
+            } else {
+                renderList('cl_name', 'name', [...new Set(allowedNames)], currentSelections.name, null); 
+            }
+            
+            renderGanttChart(); 
+            renderWorkloadInputs(); 
+        }
+
+        function renderList(containerId, fieldName, fullList, selectedValue, allowedList) {
+            const container = document.getElementById(containerId); container.innerHTML = '';
+            if (fullList.length === 0) { container.innerHTML = `<span style="color:#aaa; font-size:12px;">尚無設定</span>`; return; }
+            
+            fullList.forEach(item => {
+                if(!item) return; 
+                const btn = document.createElement('button'); btn.type = "button";
+                const isSelected = Array.isArray(selectedValue) ? selectedValue.includes(item) : item === selectedValue;
+                
+                btn.className = `check-btn ${isSelected ? 'active' : ''} ${(!allowedList || allowedList.includes(item)) ? '' : 'disabled'}`;
+                
+                if (fieldName === 'name') {
+                    const taskCount = getPersonTaskCount(item);
+                    const badgeBg = taskCount > 0 ? '#ffe0b2' : '#f5f5f5';
+                    const badgeColor = taskCount > 0 ? '#e65100' : '#888';
+                    btn.innerHTML = `<span>${item}</span> <span style="font-size:11px; background:${badgeBg}; color:${badgeColor}; padding:2px 6px; border-radius:10px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">事項加總: ${taskCount}</span>`;
+                } else {
+                    btn.textContent = item;
+                }
+
+                btn.onclick = () => handleToggleSelection(fieldName, item);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleToggleSelection(type, value) {
+            if (type === 'micro' || type === 'name' || type === 'subTask') {
+                const idx = currentSelections[type].indexOf(value);
+                if (idx > -1) currentSelections[type].splice(idx, 1);
+                else currentSelections[type].push(value);
+            } 
+            else {
+                if (currentSelections[type] === value) {
+                    currentSelections[type] = ""; 
+                    if (type === 'group') currentSelections.name = [];
+                    if (type === 'macro') currentSelections.micro = [];
+                    if (type === 'task') currentSelections.subTask = []; 
+                    if (type === 'region') { currentSelections.project = ""; currentSelections.category = ""; }
+                    if (type === 'project') { currentSelections.category = ""; }
+                } else {
+                    currentSelections[type] = value; 
+                    if (type === 'group') currentSelections.name = [];
+                    if (type === 'macro') currentSelections.micro = [];
+                    if (type === 'task') currentSelections.subTask = []; 
+                    if (type === 'region') {
+                        const validP = db.rpLinks.filter(l => l.region === value).map(l => l.project);
+                        if(!validP.includes(currentSelections.project)) { currentSelections.project = ""; currentSelections.category = ""; }
+                    }
+                    if (type === 'project') {
+                        const validR = db.rpLinks.filter(l => l.project === value).map(l => l.region);
+                        if(!validR.includes(currentSelections.region) && validR.length === 1) currentSelections.region = validR[0];
+                        currentSelections.category = "";
+                    }
+                }
+            }
+
+            const triggerFields = ['region', 'project', 'category', 'macro', 'micro', 'task'];
+            
+            if (triggerFields.includes(type)) {
+                if (currentSelections.region && currentSelections.project && currentSelections.category) {
+                    let matches = mainTableData.filter(row => {
+                        if (row.region !== currentSelections.region) return false;
+                        if (row.project !== currentSelections.project) return false;
+                        if (row.category !== currentSelections.category) return false;
+                        if ((row.macro || "") !== (currentSelections.macro || "")) return false;
+                        
+                        let selMicros = [...currentSelections.micro].sort().join(',');
+                        let rowMicros = row.micro ? row.micro.split(',').map(s=>s.trim()).sort().join(',') : "";
+                        if (selMicros !== rowMicros) return false;
+
+                        if ((row.task || "") !== (currentSelections.task || "")) return false;
+                        return true;
+                    });
+
+                    if (matches.length > 0) {
+                        let first = matches[0];
+                        
+                        if (first.group) currentSelections.group = first.group;
+                        if (first.subTask) {
+                            let rowSubs = first.subTask.split(',').map(s=>s.trim()).filter(s=>s);
+                            rowSubs.forEach(s => {
+                                if (!currentSelections.subTask.includes(s)) currentSelections.subTask.push(s);
+                            });
+                        }
+
+                        matches.forEach(m => {
+                            let n = m.name || "";
+                            if (n && !currentSelections.name.includes(n)) {
+                                currentSelections.name.push(n);
+                            }
+                            
+                            let targetN = n === "" ? "未指定姓名" : n;
+                            if (!currentWorkloads[targetN]) currentWorkloads[targetN] = {};
+                            
+                            ['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12'].forEach(month => {
+                                if (m[month]) currentWorkloads[targetN][month] = m[month];
+                            });
+                        });
+
+                        let matchedIndices = [];
+                        mainTableData.forEach((row, idx) => {
+                            if (matches.includes(row)) matchedIndices.push(idx);
+                        });
+
+                        let currentEditVal = document.getElementById('editIndex').value;
+                        let originalIndices = [];
+                        if (currentEditVal && currentEditVal.startsWith('[')) {
+                            originalIndices = JSON.parse(currentEditVal);
+                        } else if (currentEditVal && currentEditVal !== '-1') {
+                            originalIndices = [parseInt(currentEditVal)];
+                        }
+
+                        let combinedIndices = [...new Set([...originalIndices, ...matchedIndices])];
+                        document.getElementById('editIndex').value = JSON.stringify(combinedIndices);
+
+                    } else {
+                        if (currentSelections.name.length > 0) {
+                            if (confirm('查無此設定組合的舊資料。\n是否要清除下方目前選擇的「人員」與「權重分配」？\n\n[確定] 清空並重新分配\n[取消] 保留當前人員設定 (適合用於修改/轉移製程)')) {
+                                currentSelections.group = "";
+                                currentSelections.name = [];
+                                currentWorkloads = {};
+                                document.getElementById('editIndex').value = '-1';
+                            }
+                        }
+                    }
+                }
+            }
+
+            checkWaterfallState(); 
+            buildCheckLists();
+        }
+
+        function renderWorkloadInputs() {
+            const container = document.getElementById('workload_rows');
+            let names = currentSelections.name.length > 0 ? currentSelections.name : ['未指定姓名'];
+            let html = '';
+            
+            names.forEach(n => {
+                if(!currentWorkloads[n]) {
+                    currentWorkloads[n] = {m1:'',m2:'',m3:'',m4:'',m5:'',m6:'',m7:'',m8:'',m9:'',m10:'',m11:'',m12:''};
+                }
+                html += `<div class="workload-row">`;
+                html += `<div class="workload-row-name" title="點擊清除 ${n} 的所有月份分配" style="cursor:pointer; transition:0.2s;" onmouseover="this.style.backgroundColor='#bbdefb'" onmouseout="this.style.backgroundColor='#e3f2fd'" onclick="clearPersonWorkload('${n}')">${n}</div>`;
+                for(let i=1; i<=12; i++) {
+                    let val = currentWorkloads[n]['m'+i];
+                    html += `<div><input type="number" class="workload-input" value="${val}" min="0.1" max="1" step="0.05" oninput="updateWorkload('${n}', 'm${i}', this.value)"></div>`;
+                }
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        window.clearPersonWorkload = function(name) {
+            if (confirm(`確定要清除「${name}」 1 到 12 月的所有權重分配嗎？`)) {
+                if (currentWorkloads[name]) {
+                    for(let i=1; i<=12; i++) {
+                        currentWorkloads[name]['m'+i] = '';
+                    }
+                    renderWorkloadInputs(); 
+                }
+            }
+        }
+
+        window.clearMonthWorkload = function(month) {
+            if (confirm(`確定要清除「所有人」在 ${month} 月的權重分配嗎？`)) {
+                let names = currentSelections.name.length > 0 ? currentSelections.name : ['未指定姓名'];
+                names.forEach(n => {
+                    if (currentWorkloads[n]) {
+                        currentWorkloads[n]['m'+month] = '';
+                    }
+                });
+                renderWorkloadInputs(); 
+            }
+        }
+
+        window.updateWorkload = function(name, month, val) {
+            if(currentWorkloads[name]) currentWorkloads[name][month] = val;
+        }
+
+        window.updateInlineWorkload = function(index, month, val) {
+            if (val && (val < 0.1 || val > 1)) {
+                alert("權重分配請輸入 0.1 ~ 1 之間的數值！");
+                renderMainTable(); 
+                return;
+            }
+            if (mainTableData[index]) {
+                mainTableData[index][month] = val;
+                saveAllStorage(); 
+            }
+        };
+
+        function renderGanttChart() {
+            const parent = document.getElementById('gantt_container_parent');
+            const barsContainer = document.getElementById('gantt_bars');
+            const container = document.getElementById('gantt_container');
+            barsContainer.innerHTML = ''; 
+
+            if (!currentSelections.region || !currentSelections.project || !currentSelections.category) { parent.style.display = 'none'; return; }
+
+            let ms = db.milestones.filter(m => m.region === currentSelections.region && m.project === currentSelections.project && m.category === currentSelections.category);
+            if (ms.length === 0) { parent.style.display = 'none'; return; }
+
+            parent.style.display = 'block';
+            ms.sort((a,b) => new Date(a.start) - new Date(b.start));
+
+            const yearStart = new Date('2026-01-01T00:00:00').getTime();
+            const yearEnd = new Date('2026-12-31T23:59:59').getTime();
+            const yearDuration = yearEnd - yearStart;
+            let lanes = []; 
+
+            ms.forEach(m => {
+                const startT = new Date(m.start).getTime();
+                const endT = new Date(m.end).getTime();
+                let leftPct = ((startT - yearStart) / yearDuration) * 100;
+                let widthPct = ((endT - startT) / yearDuration) * 100;
+
+                let assignedLane = -1;
+                for(let i=0; i<lanes.length; i++) {
+                    if (lanes[i] < startT) { assignedLane = i; lanes[i] = endT; break; }
+                }
+                if (assignedLane === -1) { lanes.push(endT); assignedLane = lanes.length - 1; }
+
+                const topPos = assignedLane * 28 + 6; 
+                const sd = new Date(m.start); const ed = new Date(m.end);
+                const strStart = `${sd.getMonth()+1}/${sd.getDate()}`; const strEnd = `${ed.getMonth()+1}/${ed.getDate()}`;
+                
+                const bar = document.createElement('div');
+                bar.className = `gantt-bar ${m.category === 'NPI' ? 'gantt-npi' : 'gantt-mp'}`;
+                bar.style.left = `${leftPct}%`; bar.style.width = `${widthPct}%`; bar.style.top = `${topPos}px`;
+                bar.title = `[${m.category}] ${m.phase} (${strStart}~${strEnd})`; 
+                bar.innerHTML = `<span>${strStart}</span><b>${m.phase}</b><span>${strEnd}</span>`;
+                barsContainer.appendChild(bar);
+            });
+            container.style.height = `${Math.max(40, lanes.length * 28 + 12)}px`;
+        }
+
+        function saveDataRow() {
+            let isFormValid = true;
+            document.querySelectorAll('.workload-input').forEach(el => {
+                if (el.value && !el.checkValidity()) { isFormValid = false; el.reportValidity(); }
+            });
+            if (!isFormValid) return; 
+
+            const editIndexVal = document.getElementById('editIndex').value;
+            let indicesToRemove = [];
+            
+            if (editIndexVal && editIndexVal.startsWith('[')) {
+                indicesToRemove = JSON.parse(editIndexVal);
+            } else if (editIndexVal) {
+                const idx = parseInt(editIndexVal);
+                if (idx !== -1) indicesToRemove = [idx];
+            }
+
+            let namesToSave = currentSelections.name.length > 0 ? currentSelections.name : [''];
+            let newRows = [];
+
+            namesToSave.forEach(n => {
+                let row = {
+                    region: currentSelections.region, project: currentSelections.project, category: currentSelections.category,
+                    macro: currentSelections.macro, micro: currentSelections.micro.join(', '), 
+                    group: currentSelections.group, name: n, 
+                    task: currentSelections.task, subTask: currentSelections.subTask.join(', ')
+                };
+                
+                let targetN = n === "" ? "未指定姓名" : n;
+                ['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12'].forEach(m => {
+                    row[m] = currentWorkloads[targetN] ? currentWorkloads[targetN][m] : "";
+                });
+                newRows.push(row);
+            });
+
+            if (indicesToRemove.length > 0) {
+                const insertPos = Math.min(...indicesToRemove);
+                indicesToRemove.sort((a,b) => b - a).forEach(idx => mainTableData.splice(idx, 1));
+                mainTableData.splice(insertPos, 0, ...newRows);
+            } else {
+                mainTableData.push(...newRows);
+            }
+            
+            saveAllStorage(); renderMainTable(); closeModal('dataModal');
+        }
+
+        // ================= 管理關聯資料庫 UI =================
+        function switchDbTab(tab) {
+            document.querySelectorAll('.db-tab-btn').forEach(b => {
+                b.classList.remove('active');
+                if (b.innerText.includes('事項綁定') && tab === 'task') b.style.backgroundColor = '#4CAF50';
+                else if (b.innerText.includes('事項綁定')) b.style.backgroundColor = '#e8f5e9';
+                else if (b.innerText.includes('大小製程') && tab === 'process') b.style.backgroundColor = '#00695c';
+                else if (b.innerText.includes('大小製程')) b.style.backgroundColor = '#e0f2f1';
+                else b.style.backgroundColor = ''; 
+            });
+            document.querySelectorAll('.db-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab_' + tab).classList.add('active');
+            
+            if (tab !== 'task' && tab !== 'process') event.target.classList.add('active');
+            else event.target.style.color = 'white';
+        }
+
+        function openDbModal() { 
+            updateFilterDropdowns(); applyRpFilter(); applyMilestoneFilter(); applyProcessFilter(); applyGroupFilter(); applyTaskFilter();
+            document.getElementById('dbModal').style.display = 'block'; 
+        }
+
+        function updateFilterDropdowns() {
+            const msRpSelect = document.getElementById('ms_rp'); const currentMsRp = msRpSelect.value;
+            msRpSelect.innerHTML = `<option value="">-- 選擇地區/專案 --</option>` + db.rpLinks.map(l => `<option value="${l.region}|${l.project}">${l.region} - ${l.project}</option>`).join('');
+            msRpSelect.value = currentMsRp;
+
+            const setDl = (id, arr) => document.getElementById(id).innerHTML = [...new Set(arr)].map(x => `<option value="${x}">`).join('');
+            setDl('dl_groups', db.groupLinks.map(l => l.group)); setDl('dl_names', db.groupLinks.map(l => l.name));
+            setDl('dl_regions', db.rpLinks.map(l => l.region)); setDl('dl_projects', db.rpLinks.map(l => l.project));
+            setDl('dl_macros', db.processLinks.map(l => l.macro)); setDl('dl_micros', db.processLinks.map(l => l.micro));
+            setDl('dl_tasks', db.taskLinks.map(l => l.task));
+        }
+
+        function applyRpFilter() { 
+            const f_reg = document.getElementById('rp_region').value.toLowerCase();
+            const f_proj = document.getElementById('rp_project').value.toLowerCase();
+            const tbody = document.getElementById('db_rp_list'); tbody.innerHTML = '';
+            db.rpLinks.forEach((l, i) => {
+                if (f_reg && !l.region.toLowerCase().includes(f_reg)) return;
+                if (f_proj && !l.project.toLowerCase().includes(f_proj)) return;
+                tbody.innerHTML += `<tr><td>${l.region}</td><td>${l.project}</td><td style="white-space:nowrap;"><button class="btn-edit" onclick="startEditDb('rp', ${i})">編輯</button><button class="btn-delete-small" onclick="delDb('rp', ${i})">刪除</button></td></tr>`;
+            });
+            if(tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">查無資料</td></tr>';
+        }
+        function resetRpFilter() { document.getElementById('rp_region').value = ""; document.getElementById('rp_project').value = ""; applyRpFilter(); }
+        function addDbRpLink() {
+            const r = document.getElementById('rp_region').value.trim(); const p = document.getElementById('rp_project').value.trim();
+            if (r && p) {
+                if (!db.rpLinks.find(x => x.region === r && x.project === p)) db.rpLinks.push({region: r, project: p});
+                document.getElementById('rp_project').value = ''; saveAllStorage(); applyRpFilter(); updateFilterDropdowns();
+            } else { alert("請輸入地區與專案名稱！"); }
+        }
+
+        function applyMilestoneFilter() { 
+            const f_rp = document.getElementById('ms_rp').value; const f_cat = document.getElementById('ms_category').value;
+            const tbody = document.getElementById('db_milestone_list'); tbody.innerHTML = '';
+            let filteredMs = db.milestones.filter(l => {
+                if (f_rp) { const [r, p] = f_rp.split('|'); if (l.region !== r || l.project !== p) return false; }
+                if (f_cat && l.category !== f_cat) return false; return true;
+            });
+            filteredMs.sort((a,b) => new Date(a.start) - new Date(b.start));
+            filteredMs.forEach(l => {
+                const tagClass = l.category === 'NPI' ? 'tag-npi' : 'tag-mp';
+                const originalIndex = db.milestones.indexOf(l);
+                tbody.innerHTML += `<tr><td>${l.region}</td><td>${l.project}</td><td><span class="${tagClass}">${l.category}</span></td><td style="font-weight:bold;">${l.phase}</td><td>${l.start}</td><td>${l.end}</td><td style="white-space:nowrap;"><button class="btn-edit" onclick="startEditDb('milestone', ${originalIndex})">編輯</button><button class="btn-delete-small" onclick="delDb('milestone', ${originalIndex})">刪除</button></td></tr>`;
+            });
+            if(tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888;">查無資料</td></tr>';
+        }
+        function resetMilestoneFilter() { document.getElementById('ms_rp').value = ""; document.getElementById('ms_category').value = ""; document.getElementById('ms_phase').value = ""; document.getElementById('ms_start').value = ""; document.getElementById('ms_end').value = ""; applyMilestoneFilter(); }
+        function addDbMilestone() {
+            const rpVal = document.getElementById('ms_rp').value; const cat = document.getElementById('ms_category').value;
+            const ph = document.getElementById('ms_phase').value.trim(); const st = document.getElementById('ms_start').value; const ed = document.getElementById('ms_end').value;
+            if (!rpVal || !cat) { alert("請先選擇【地區/專案】與【類別】作為綁定目標！"); return; }
+            if (ph && st && ed) {
+                const [r, p] = rpVal.split('|');
+                if(new Date(st) > new Date(ed)) { alert("開始時間不能晚於結束時間！"); return; }
+                db.milestones.push({region: r, project: p, category: cat, phase: ph, start: st, end: ed});
+                document.getElementById('ms_phase').value = ''; saveAllStorage(); applyMilestoneFilter();
+            } else { alert("請填寫「階段名稱」並指定「起訖日期」！"); }
+        }
+
+        function applyProcessFilter() { 
+            const f_mac = document.getElementById('proc_macro').value.toLowerCase();
+            const f_mic = document.getElementById('proc_micro').value.toLowerCase();
+            const tbody = document.getElementById('db_process_list'); tbody.innerHTML = '';
+            db.processLinks.forEach((l, i) => {
+                if (f_mac && !l.macro.toLowerCase().includes(f_mac)) return;
+                if (f_mic && !f_mic.includes(',') && !l.micro.toLowerCase().includes(f_mic)) return;
+                tbody.innerHTML += `<tr><td>${l.macro}</td><td>${l.micro}</td><td style="white-space:nowrap;"><button class="btn-edit" onclick="startEditDb('process', ${i})">編輯</button><button class="btn-delete-small" onclick="delDb('process', ${i})">刪除</button></td></tr>`;
+            });
+            if(tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">查無資料</td></tr>';
+        }
+        function resetProcessFilter() { document.getElementById('proc_macro').value = ""; document.getElementById('proc_micro').value = ""; applyProcessFilter(); }
+        function addDbProcessLink() {
+            const mac = document.getElementById('proc_macro').value.trim(); 
+            const mic_raw = document.getElementById('proc_micro').value.trim();
+            if (mac) { 
+                if (mic_raw) {
+                    mic_raw.split(',').map(i => i.trim()).filter(i => i !== "").forEach(mic => {
+                        if (!db.processLinks.find(x => x.macro === mac && x.micro === mic)) db.processLinks.push({macro: mac, micro: mic});
+                    });
+                } else {
+                    if (!db.processLinks.find(x => x.macro === mac && x.micro === "")) db.processLinks.push({macro: mac, micro: ""});
+                }
+                document.getElementById('proc_micro').value = ''; saveAllStorage(); applyProcessFilter(); updateFilterDropdowns();
+            } else { alert("至少需輸入大製程！"); }
+        }
+
+        function applyGroupFilter() { 
+            const f_grp = document.getElementById('grp_group').value.toLowerCase(); const f_name = document.getElementById('grp_name').value.toLowerCase();
+            const tbody = document.getElementById('db_group_list'); tbody.innerHTML = '';
+            db.groupLinks.forEach((l, i) => {
+                if (f_grp && !l.group.toLowerCase().includes(f_grp)) return;
+                if (f_name && !f_name.includes(',') && !l.name.toLowerCase().includes(f_name)) return;
+                tbody.innerHTML += `<tr><td>${l.group}</td><td>${l.name}</td><td style="white-space:nowrap;"><button class="btn-edit" onclick="startEditDb('group', ${i})">編輯</button><button class="btn-delete-small" onclick="delDb('group', ${i})">刪除</button></td></tr>`;
+            });
+            if(tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">查無資料</td></tr>';
+        }
+        function resetGroupFilter() { document.getElementById('grp_group').value = ""; document.getElementById('grp_name').value = ""; applyGroupFilter(); }
+        function addDbGroupLink() {
+            const g = document.getElementById('grp_group').value.trim(); const n_raw = document.getElementById('grp_name').value.trim();
+            if (g && n_raw) { 
+                n_raw.split(',').map(i => i.trim()).filter(i => i !== "").forEach(name => {
+                    if (!db.groupLinks.find(x => x.group === g && x.name === name)) db.groupLinks.push({group: g, name: name});
+                });
+                document.getElementById('grp_name').value = ''; saveAllStorage(); applyGroupFilter(); updateFilterDropdowns();
+            } else { alert("請輸入組別與姓名！"); }
+        }
+
+        function applyTaskFilter() {
+            const f_main = document.getElementById('task_main').value.toLowerCase();
+            const f_sub = document.getElementById('task_sub').value.toLowerCase();
+            const tbody = document.getElementById('db_task_list'); tbody.innerHTML = '';
+            db.taskLinks.forEach((l, i) => {
+                if (f_main && !l.task.toLowerCase().includes(f_main)) return;
+                if (f_sub && !f_sub.includes(',') && !l.subTask.toLowerCase().includes(f_sub)) return;
+                tbody.innerHTML += `<tr><td>${l.task}</td><td>${l.subTask}</td><td style="white-space:nowrap;"><button class="btn-edit" onclick="startEditDb('task', ${i})">編輯</button><button class="btn-delete-small" onclick="delDb('task', ${i})">刪除</button></td></tr>`;
+            });
+            if(tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">查無資料</td></tr>';
+        }
+        function resetTaskFilter() { document.getElementById('task_main').value = ""; document.getElementById('task_sub').value = ""; applyTaskFilter(); }
+        function addDbTaskLink() {
+            const mainT = document.getElementById('task_main').value.trim();
+            const subT_raw = document.getElementById('task_sub').value.trim();
+            if (mainT) {
+                if (subT_raw) {
+                    subT_raw.split(',').map(i => i.trim()).filter(i => i !== "").forEach(sub => {
+                        if (!db.taskLinks.find(x => x.task === mainT && x.subTask === sub)) db.taskLinks.push({task: mainT, subTask: sub});
+                    });
+                } else {
+                    if (!db.taskLinks.find(x => x.task === mainT && x.subTask === "")) db.taskLinks.push({task: mainT, subTask: ""});
+                }
+                document.getElementById('task_sub').value = ''; saveAllStorage(); applyTaskFilter(); updateFilterDropdowns();
+            } else { alert("至少需輸入主事項！"); }
+        }
+
+        function delDb(type, originalIndex) {
+            if (type === 'rp') db.rpLinks.splice(originalIndex, 1);
+            else if (type === 'milestone') db.milestones.splice(originalIndex, 1);
+            else if (type === 'process') db.processLinks.splice(originalIndex, 1);
+            else if (type === 'group') db.groupLinks.splice(originalIndex, 1);
+            else if (type === 'task') db.taskLinks.splice(originalIndex, 1);
+            saveAllStorage(); 
+            if (type === 'rp') { applyRpFilter(); updateFilterDropdowns(); }
+            else if (type === 'milestone') applyMilestoneFilter();
+            else if (type === 'process') { applyProcessFilter(); updateFilterDropdowns(); }
+            else if (type === 'group') { applyGroupFilter(); updateFilterDropdowns(); }
+            else { applyTaskFilter(); updateFilterDropdowns(); }
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        window.onclick = function(e) { if (e.target.className === 'modal') e.target.style.display = 'none'; }
+
+        // ================= 資料庫連動編輯功能 =================
+        let currentEditDb = { type: null, index: -1 };
+
+        function startEditDb(type, index) {
+            currentEditDb = { type: type, index: index };
+            let body = document.getElementById('editDbBody');
+            let html = '';
+            if (type === 'rp') {
+                const obj = db.rpLinks[index];
+                html = `<label style="display:block;margin-bottom:10px;">地區：<input type="text" id="edit_reg" value="${obj.region}" class="workload-input"></label>
+                        <label style="display:block;">專案：<input type="text" id="edit_proj" value="${obj.project}" class="workload-input"></label>`;
+            } else if (type === 'process') {
+                const obj = db.processLinks[index];
+                html = `<label style="display:block;margin-bottom:10px;">大製程：<input type="text" id="edit_mac" value="${obj.macro}" class="workload-input"></label>
+                        <label style="display:block;">小製程：<input type="text" id="edit_mic" value="${obj.micro}" class="workload-input"></label>`;
+            } else if (type === 'group') {
+                const obj = db.groupLinks[index];
+                html = `<label style="display:block;margin-bottom:10px;">組別：<input type="text" id="edit_grp" value="${obj.group}" class="workload-input"></label>
+                        <label style="display:block;">姓名：<input type="text" id="edit_name" value="${obj.name}" class="workload-input"></label>`;
+            } else if (type === 'task') {
+                const obj = db.taskLinks[index];
+                html = `<label style="display:block;margin-bottom:10px;">主事項：<input type="text" id="edit_main" value="${obj.task}" class="workload-input"></label>
+                        <label style="display:block;">小事項：<input type="text" id="edit_sub" value="${obj.subTask}" class="workload-input"></label>`;
+            } else if (type === 'milestone') {
+                const obj = db.milestones[index];
+                html = `<label style="display:block;margin-bottom:10px;">階段名稱：<input type="text" id="edit_ph" value="${obj.phase}" class="workload-input"></label>
+                        <label style="display:block;margin-bottom:10px;">開始時間：<input type="date" id="edit_st" value="${obj.start}" class="workload-input"></label>
+                        <label style="display:block;">結束時間：<input type="date" id="edit_ed" value="${obj.end}" class="workload-input"></label>`;
+            }
+            body.innerHTML = html;
+            document.getElementById('editDbModal').style.display = 'block';
+        }
+
+        function saveDbEdit() {
+            const { type, index } = currentEditDb;
+            
+            if (type === 'rp') {
+                const oldObj = db.rpLinks[index];
+                const oldReg = oldObj.region; const oldProj = oldObj.project;
+                const newReg = document.getElementById('edit_reg').value.trim();
+                const newProj = document.getElementById('edit_proj').value.trim();
+                if(!newReg || !newProj) { alert("地區與專案不可為空！"); return; }
+                
+                if (newReg !== oldReg) {
+                    mainTableData.forEach(r => { if (r.region === oldReg) r.region = newReg; });
+                    db.rpLinks.forEach(r => { if (r.region === oldReg) r.region = newReg; });
+                    db.milestones.forEach(m => { if (m.region === oldReg) m.region = newReg; });
+                }
+                if (newProj !== oldProj) {
+                    mainTableData.forEach(r => { if (r.region === newReg && r.project === oldProj) r.project = newProj; });
+                    db.rpLinks.forEach(r => { if (r.region === newReg && r.project === oldProj) r.project = newProj; });
+                    db.milestones.forEach(m => { if (m.region === newReg && m.project === oldProj) m.project = newProj; });
+                }
+                applyRpFilter();
+
+            } else if (type === 'process') {
+                const oldObj = db.processLinks[index];
+                const oldMac = oldObj.macro; const oldMic = oldObj.micro;
+                const newMac = document.getElementById('edit_mac').value.trim();
+                const newMic = document.getElementById('edit_mic').value.trim();
+                if(!newMac) { alert("大製程不可為空！"); return; }
+                
+                if (newMac !== oldMac) {
+                    mainTableData.forEach(r => { if (r.macro === oldMac) r.macro = newMac; });
+                    db.processLinks.forEach(p => { if (p.macro === oldMac) p.macro = newMac; });
+                }
+                if (newMic !== oldMic) {
+                    mainTableData.forEach(row => {
+                        if (row.macro === newMac) {
+                            let mics = row.micro ? row.micro.split(',').map(s=>s.trim()).filter(s=>s) : [];
+                            if (oldMic) {
+                                let idx = mics.indexOf(oldMic);
+                                if (idx > -1) {
+                                    if (newMic) mics[idx] = newMic; else mics.splice(idx, 1);
+                                    row.micro = mics.join(', ');
+                                }
+                            } else if (!oldMic && newMic) {
+                                if (!mics.includes(newMic)) mics.push(newMic);
+                                row.micro = mics.join(', ');
+                            }
+                        }
+                    });
+                    db.processLinks[index].micro = newMic; 
+                }
+                applyProcessFilter();
+
+            } else if (type === 'group') {
+                const oldObj = db.groupLinks[index];
+                const oldGrp = oldObj.group; const oldName = oldObj.name;
+                const newGrp = document.getElementById('edit_grp').value.trim();
+                const newName = document.getElementById('edit_name').value.trim();
+                if(!newGrp || !newName) { alert("組別與姓名不可為空！"); return; }
+
+                if (newGrp !== oldGrp) {
+                    mainTableData.forEach(r => { if (r.group === oldGrp) r.group = newGrp; });
+                    db.groupLinks.forEach(g => { if (g.group === oldGrp) g.group = newGrp; });
+                }
+                if (newName !== oldName) {
+                    mainTableData.forEach(r => { if (r.group === newGrp && r.name === oldName) r.name = newName; });
+                    db.groupLinks[index].name = newName;
+                }
+                applyGroupFilter();
+
+            } else if (type === 'task') {
+                const oldObj = db.taskLinks[index];
+                const oldTask = oldObj.task; const oldSub = oldObj.subTask;
+                const newTask = document.getElementById('edit_main').value.trim();
+                const newSub = document.getElementById('edit_sub').value.trim();
+                if(!newTask) { alert("主事項不可為空！"); return; }
+
+                if (newTask !== oldTask) {
+                    mainTableData.forEach(r => { if (r.task === oldTask) r.task = newTask; });
+                    db.taskLinks.forEach(t => { if (t.task === oldTask) t.task = newTask; });
+                }
+                if (newSub !== oldSub) {
+                    mainTableData.forEach(row => {
+                        if (row.task === newTask) {
+                            let subs = row.subTask ? row.subTask.split(',').map(s=>s.trim()).filter(s=>s) : [];
+                            if (oldSub) {
+                                let idx = subs.indexOf(oldSub);
+                                if (idx > -1) {
+                                    if (newSub) subs[idx] = newSub; else subs.splice(idx, 1);
+                                    row.subTask = subs.join(', ');
+                                }
+                            } else if (!oldSub && newSub) {
+                                if (!subs.includes(newSub)) subs.push(newSub);
+                                row.subTask = subs.join(', ');
+                            }
+                        }
+                    });
+                    db.taskLinks[index].subTask = newSub;
+                }
+                applyTaskFilter();
+
+            } else if (type === 'milestone') {
+                const oldObj = db.milestones[index];
+                const newPh = document.getElementById('edit_ph').value.trim();
+                const newSt = document.getElementById('edit_st').value;
+                const newEd = document.getElementById('edit_ed').value;
+                if(!newPh || !newSt || !newEd) { alert("所有欄位皆必填！"); return; }
+
+                db.milestones[index] = { ...oldObj, phase: newPh, start: newSt, end: newEd };
+                applyMilestoneFilter();
+            }
+
+            saveAllStorage(); 
+            renderMainTable(); 
+            updateFilterDropdowns();
+            closeModal('editDbModal');
+            alert("✅ 資料庫設定已修改，總表相關資料也已同步連動更新！");
+        }
+    </script>
+</body>
+</html>

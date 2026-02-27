@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>应用中心 - ProjectHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/menu-style.css"> <!-- 路径相对于 client/index.html -->
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 text-gray-800 antialiased flex flex-col">
+    <div class="container mx-auto px-4 py-8 flex-grow">
+        <header class="text-center mb-10 sm:mb-12">
+            <!-- ... header content ... -->
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
+            
+            <!-- 人力需求總表項目入口 -->
+            <a href="./Manpower/index.html" class="menu-card group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-orange-500 text-white flex items-center justify-center rounded-full mx-auto mb-4 text-3xl font-bold group-hover:bg-orange-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 group-hover:text-orange-600 transition-colors mb-2">人力需求總表</h2>
+                    <p class="text-sm text-gray-500">視覺化管理與分析人力資源需求，支援 Excel 檔案匯入。 (原「人力」網頁)</p>
+                </div>
+                <div class="bg-gray-50 px-6 py-3 text-right">
+                    <span class="text-orange-500 group-hover:text-orange-700 font-semibold text-sm">點此查看 →</span>
+                </div>
+            </a>
+
+            <!-- 井字棋项目入口 -->
+            <!-- onclick 事件被移除了，现在是纯链接 -->
+            <a href="./tic-tac-toe/index.html" class="menu-card group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-blue-500 text-white flex items-center justify-center rounded-full mx-auto mb-4 text-3xl font-bold group-hover:bg-blue-600 transition-colors">OX</div>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors mb-2">特殊規則井字遊戲</h2>
+                    <p class="text-sm text-gray-500">經典井字棋加入特殊移除規則，挑戰你的策略！支援雙人對戰及AI模式。</p>
+                </div>
+                <div class="bg-gray-50 px-6 py-3 text-right">
+                    <span class="text-blue-500 group-hover:text-blue-700 font-semibold text-sm">进入游戏 →</span>
+                </div>
+            </a>
+
+            <!-- 互动式矩形网格模拟项目入口 -->
+            <!-- onclick 事件被移除了，现在是纯链接 -->
+            <a href="./grid-simulation/index.html" class="menu-card group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-green-500 text-white flex items-center justify-center rounded-full mx-auto mb-4 text-3xl group-hover:bg-green-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 group-hover:text-green-600 transition-colors mb-2">互動式矩形網格模擬</h2>
+                    <p class="text-sm text-gray-500">配置並觀察多層矩形網格的複雜動態行為與交互。</p>
+                </div>
+                <div class="bg-gray-50 px-6 py-3 text-right">
+                    <span class="text-green-500 group-hover:text-green-700 font-semibold text-sm">启动模拟 →</span>
+                </div>
+            </a>
+            <!-- onclick 事件被移除了，现在是纯链接 -->
+            <a href="/ExcelCoordinateMapper/index.html" 
+               class="menu-card group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 overflow-hidden min-w-[300px] max-w-[400px] mx-auto">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-purple-500 text-white flex items-center justify-center rounded-full mx-auto mb-4 group-hover:bg-purple-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" 
+                             fill="none" 
+                             viewBox="0 0 24 24" 
+                             stroke-width="1.5" 
+                             stroke="currentColor" 
+                             class="w-8 h-8 text-white"> <!-- 明确指定颜色 -->
+                            <path ... />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 group-hover:text-purple-600 transition-colors mb-2">
+                        點位模板套用
+                    </h2>
+                    <div class="bg-gray-50 px-6 py-3 text-right">
+                        <span class="text-purple-500 group-hover:text-purple-700 font-semibold text-sm">
+                            开始应用 →
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </main>
+    </div>
+    <footer class="text-center text-gray-500 py-6 text-xs">
+        © 2024 ProjectHub by a777777735
+    </footer>
+    <!-- 假设 menu-script.js 在 client/js/ 目录下 (如果需要的话) -->
+    <!-- <script src="./js/menu-script.js"></script>  -->
+</body>
+</html>

@@ -1,0 +1,23 @@
+/* tic-tac-toe-project/client/css/menu-style.css */
+/* 你可以在这里添加主菜单页面特定的、Tailwind 不方便直接处理的样式 */
+/* 例如，更复杂的背景、特定的动画效果等 */
+
+/* 保持 body 最小高度，确保页脚在内容不足时也能在底部附近 */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main.grid { /* 如果主内容区使用grid布局 */
+    flex-grow: 1; /* 让主内容区填充剩余空间 */
+}
+
+/* 你也可以保留之前为卡片写的 hover 效果 */
+.menu-card { /* 重命名，之前叫 menu-item */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.menu-card:hover {
+    transform: translateY(-5px) scale(1.02); /* 稍微放大一点 */
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12), 0 8px 8px rgba(0,0,0,0.08); /* 更明显的阴影 */
+}

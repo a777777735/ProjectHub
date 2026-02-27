@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>座標編輯器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="controls">
+        <input type="file" id="excelFile" accept=".xlsx">
+        <label for="rectWidth">長方形寬:</label>
+        <input type="number" id="rectWidth" value="100" min="1">
+        <label for="rectHeight">長方形高:</label>
+        <input type="number" id="rectHeight" value="100" min="1">
+        <button id="exportExcel">匯出 Excel</button>
+        <button id="clearTemplate">清除模板</button>
+        <button id="applyTemplateToAll">應用模板到所有匹配位置</button>
+    </div>
+
+    <div class="main-container">
+        <canvas id="mainCanvas"></canvas>
+        <div id="templateEditor" class="template-editor" style="display: none;">
+            <h3>模板編輯器</h3>
+            <p>右鍵選擇區域定義模板，然後在此編輯。</p>
+            <ul id="templatePointList"></ul>
+            <button id="confirmTemplateChanges">確認模板變更</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

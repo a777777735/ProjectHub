@@ -1,0 +1,28 @@
+# ProjectHub/render.yaml
+services:
+  - type: web # 单一的 Web 服务
+    name: projecthub-app # 你在Render上服务的统一名称
+    env: node
+    region: oregon 
+    plan: free 
+    
+    # 构建命令在仓库根目录执行
+    buildCommand: "npm install && cd apps/tic-tac-toe-server && npm install --production && cd ../../"
+    #  解释:
+    #  1. npm install: 安装根目录 package.json 的依赖 (如 express for server/index.js)
+    #  2. cd apps/tic-tac-toe-server: 进入井字棋后端的模块目录 (如果它有独立的package.json且需要构建)
+    #  3. npm install --production: (如果井字棋模块有自己的package.json) 安装其生产依赖
+    #  4. cd ../../: 返回到根目录，以便 startCommand 能正确执行
+    #  如果井字棋的 socketHandler.js 没有独立的 package.json 和 npm 依赖，
+    #  则 buildCommand 可以简化为仅仅 "npm install" (用于根目录的 express)。
+
+    # 启动命令在仓库根目录执行
+    startCommand: "node server/index.js" 
+    
+    healthCheckPath: / # 主菜单页作为健康检查
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT is automatically injected by Render
+      # TIC_TAC_TOE_BACKEND_URL 环境变量不再需要，因为Socket.IO现在由同一个服务器提供

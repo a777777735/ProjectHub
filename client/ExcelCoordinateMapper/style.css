@@ -1,0 +1,82 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #f0f0f0;
+}
+
+.controls {
+    padding: 10px;
+    background-color: #ddd;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.controls label {
+    margin-left: 10px;
+}
+
+.main-container {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden; /* Important for canvas container */
+}
+
+
+#mainCanvas {
+    border: 1px solid black;
+    cursor: grab;
+    background-color: #fff;
+    flex-grow: 1; /* 新增：讓 canvas 填充可用空間 */
+    /* Let JS set width/height */
+}
+
+.template-editor {
+    width: 300px;
+    padding: 10px;
+    background-color: #e9e9e9;
+    border-left: 1px solid #ccc;
+    overflow-y: auto;
+    flex-shrink: 0; /* 新增：防止編輯器在空間不足時被壓縮 */
+}
+
+.template-editor h3 {
+    margin-top: 0;
+}
+
+#templatePointList {
+    list-style-type: none;
+    padding: 0;
+}
+
+#templatePointList li {
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+}
+#templatePointList li:hover {
+    background-color: #d0d0d0;
+}
+#templatePointList li.highlighted-in-list {
+    background-color: #b0e0e6; /* Light blue for list highlight */
+    font-weight: bold;
+}
+
+#templatePointList li label {
+    display: inline-block;
+    width: 80px;
+    margin-right: 5px;
+}
+#templatePointList li select,
+#templatePointList li input[type="text"] {
+    margin-bottom: 3px;
+}
+
+.selection-rect { /* For visual feedback during selection */
+    border: 1px dashed blue;
+    position: absolute; /* Positioned by JS */
+    pointer-events: none; /* So it doesn't interfere with mouse events on canvas */
+}

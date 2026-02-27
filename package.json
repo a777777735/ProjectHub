@@ -1,0 +1,19 @@
+{
+  "name": "project-hub-monolith",
+  "version": "1.0.0",
+  "description": "A monolithic application hosting Tic Tac Toe, Grid Simulation, and more.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4" 
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "a777777735",
+  "license": "ISC"
+}

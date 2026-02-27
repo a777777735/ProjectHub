@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式矩形網格模擬</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <div class="canvas-container">
+            <canvas id="simulationCanvas"></canvas>
+            <div id="contextMenu"></div>
+            <button id="togglePanelBtn">顯示控制面板</button>
+            <button id="zoomInBtn">放大</button>
+            <button id="zoomOutBtn">縮小</button>
+            <span id="zoomLabel">縮放: 100%</span>
+            <div class="mt-4 text-sm text-gray-600 absolute bottom-0 left-0 p-4">
+                <p>* 紅色、藍色、綠色：平面一的三組單體</p>
+                <p>* 綠色：平面二的單體</p>
+                <p>* 拖動平面：在畫布上左鍵拖動最上層平面；點選其他平面空白處（非重疊區域）切換最上層</p>
+                <p>* 右鍵單體：切換顯示/隱藏（即使平面/組隱藏）；重疊時直接切換顯示/隱藏</p>
+                <p>* 平面/組隱藏：以虛線框顯示單體</p>
+                <p>* 右鍵設為最上層：保持高亮直到下一次層級變更</p>
+                <p>* 縮放：使用滑鼠滾輪或放大/縮小按鈕</p>
+                <p>* 移動：選擇移動模式後點擊「下一步移動」逐步移動平面，重疊處顯示平面一單體、隱藏平面二單體</p>
+                <p>* 重設重疊：將平面一與平面二左上角單體對齊，平面一顯示，平面二隱藏</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel" id="controlPanel">
+        <h2 class="text-lg font-bold mb-2">全局設置</h2>
+        <div class="mb-4">
+            <label class="block mb-1">單體寬度:</label>
+            <input type="number" id="defaultUnitWidth" value="70" min="1" class="border rounded p-1">
+        </div>
+        <div class="mb-4">
+            <label class="block mb-1">單體高度:</label>
+            <input type="number" id="defaultUnitHeight" value="70" min="1" class="border rounded p-1">
+        </div>
+
+        <hr class="my-4">
+
+        <h2 class="text-lg font-bold mb-2">平面一設置</h2>
+        <div class="mb-2">
+            <input type="checkbox" id="plane1Hidden">
+            <label for="plane1Hidden">隱藏平面一</label>
+        </div>
+        <div class="mb-4 grid grid-cols-2 gap-2">
+            <div>
+                <label class="block text-sm">行數:</label>
+                <input type="number" id="plane1Rows" value="5" min="1" max="50" class="border rounded p-1">
+            </div>
+            <div>
+                <label class="block text-sm">列數:</label>
+                <input type="number" id="plane1Cols" value="5" min="1" max="50" class="border rounded p-1">
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm">移動模式:</label>
+            <select id="plane1MoveMode" class="border rounded p-1 w-full">
+                <option value="x-n">X方向 N型 (左到右)</option>
+                <option value="x-s">X方向 S型 (左到右/右到左)</option>
+                <option value="y-n">Y方向 N型 (上到下)</option>
+                <option value="y-s">Y方向 S型 (上到下/下到上)</option>
+            </select>
+        </div>
+
+        <!-- 平面一：第一組 -->
+        <div class="mb-4 pl-4 border-l-2 border-red-500">
+            <h3 class="font-semibold mb-2">第一組 (紅色)</h3>
+            <div class="mb-2">
+                <input type="checkbox" id="group1Hidden">
+                <label for="group1Hidden">隱藏第一組</label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-sm">起點 X:</label>
+                    <input type="number" id="group1StartX" value="0" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">起點 Y:</label>
+                    <input type="number" id="group1StartY" value="0" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 X:</label>
+                    <input type="number" id="group1SpacingX" value="400" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 Y:</label>
+                    <input type="number" id="group1SpacingY" value="400" class="border rounded p-1">
+                </div>
+            </div>
+        </div>
+
+        <!-- 平面一：第二組 -->
+        <div class="mb-4 pl-4 border-l-2 border-blue-500">
+            <h3 class="font-semibold mb-2">第二組 (藍色)</h3>
+            <div class="mb-2">
+                <input type="checkbox" id="group2Hidden">
+                <label for="group2Hidden">隱藏第二組</label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-sm">起點 X:</label>
+                    <input type="number" id="group2StartX" value="80" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">起點 Y:</label>
+                    <input type="number" id="group2StartY" value="0" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 X:</label>
+                    <input type="number" id="group2SpacingX" value="400" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 Y:</label>
+                    <input type="number" id="group2SpacingY" value="400" class="border rounded p-1">
+                </div>
+            </div>
+        </div>
+
+        <!-- 平面一：第三組 -->
+        <div class="mb-4 pl-4 border-l-2 border-green-500">
+            <h3 class="font-semibold mb-2">第三組 (綠色)</h3>
+            <div class="mb-2">
+                <input type="checkbox" id="group3Hidden">
+                <label for="group3Hidden">隱藏第三組</label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-sm">起點 X:</label>
+                    <input type="number" id="group3StartX" value="160" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">起點 Y:</label>
+                    <input type="number" id="group3StartY" value="0" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 X:</label>
+                    <input type="number" id="group3SpacingX" value="400" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 Y:</label>
+                    <input type="number" id="group3SpacingY" value="400" class="border rounded p-1">
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- 平面二設置 -->
+        <h2 class="text-lg font-bold mb-2">平面二設置</h2>
+        <div class="mb-2">
+            <input type="checkbox" id="plane2Hidden">
+            <label for="plane2Hidden">隱藏平面二</label>
+        </div>
+        <div class="mb-2">
+            <input type="checkbox" id="plane2ResetAfterGroup">
+            <label for="plane2ResetAfterGroup">每組完成後重置序列</label>
+        </div>
+        <div class="mb-4 grid grid-cols-2 gap-2">
+            <div>
+                <label class="block text-sm">大行數:</label>
+                <input type="number" id="plane2BigRows" value="2" min="1" max="50" class="border rounded p-1">
+            </div>
+            <div>
+                <label class="block text-sm">大列數:</label>
+                <input type="number" id="plane2BigCols" value="2" min="1" max="50" class="border rounded p-1">
+            </div>
+            <div>
+                <label class="block text-sm">小行數:</label>
+                <input type="number" id="plane2Rows" value="5" min="1" max="50" class="border rounded p-1">
+            </div>
+            <div>
+                <label class="block text-sm">小列數:</label>
+                <input type="number" id="plane2Cols" value="5" min="1" max="50" class="border rounded p-1">
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm">大網格移動模式:</label>
+            <select id="plane2BigMoveMode" class="border rounded p-1 w-full">
+                <option value="x-n">X方向 N型 (左到右)</option>
+                <option value="x-s">X方向 S型 (左到右/右到左)</option>
+                <option value="y-n">Y方向 N型 (上到下)</option>
+                <option value="y-s">Y方向 S型 (上到下/下到上)</option>
+            </select>
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm">小網格移動模式:</label>
+            <select id="plane2SmallMoveMode" class="border rounded p-1 w-full">
+                <option value="x-n">X方向 N型 (左到右)</option>
+                <option value="x-s">X方向 S型 (左到右/右到左)</option>
+                <option value="y-n">Y方向 N型 (上到下)</option>
+                <option value="y-s">Y方向 S型 (上到下/下到上)</option>
+            </select>
+        </div>
+        <div class="pl-4 border-l-2 border-green-500"> <!-- 注意：这里的颜色是绿色，但平面二的单位是灰色/黑色 -->
+            <div class="mb-2 grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-sm">起點 X:</label>
+                    <input type="number" id="plane2StartX" value="0" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">起點 Y:</label>
+                    <input type="number" id="plane2StartY" value="0" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 X:</label>
+                    <input type="number" id="plane2SpacingX" value="200" class="border rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-sm">間距 Y:</label>
+                    <input type="number" id="plane2SpacingY" value="200" class="border rounded p-1">
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button id="updateBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">
+                更新畫布
+            </button>
+        </div>
+        <div class="mt-4">
+            <button id="stepMoveBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full">
+                下一步移動
+            </button>
+            <button id="completeGroupBtn" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded w-full mt-2"> <!-- 修改了颜色并添加mt-2 -->
+                完成當前組別
+            </button>
+        </div>
+        <div class="mt-4">
+            <button id="resetOverlapBtn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full">
+                重設重疊
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

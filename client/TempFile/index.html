@@ -1,33 +1,181 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>雲端隨身筆記</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        input[type="text"], input[type="password"], textarea, button { width: 100%; margin-bottom: 12px; padding: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        textarea { height: 300px; resize: vertical; font-family: inherit; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #0056b3; }
-        button.btn-danger { background-color: #dc3545; }
-        button.btn-danger:hover { background-color: #a71d2a; }
-        #editor-section { display: none; }
-        .msg-box { text-align: center; font-weight: bold; min-height: 24px; margin-bottom: 10px; }
-        .success { color: #28a745; }
-        .error { color: #dc3545; }
-        .warning { color: #856404; font-size: 14px; text-align: center; margin-bottom: 15px; }
-        
-        .file-section { background-color: #f1f8ff; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #007bff; }
-        .file-list { margin-top: 10px; font-size: 14px; }
-        .file-item { margin-bottom: 5px; padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .file-item a { color: #007bff; text-decoration: none; word-break: break-all;}
-        .file-item a:hover { text-decoration: underline; }
-        input[type="file"] { margin-bottom: 5px; width: 100%; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea,
+        button {
+            width: 100%;
+            margin-bottom: 12px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        textarea {
+            height: 300px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button.btn-danger {
+            background-color: #dc3545;
+        }
+
+        button.btn-danger:hover {
+            background-color: #a71d2a;
+        }
+
+        #editor-section {
+            display: none;
+        }
+
+        .msg-box {
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        .warning {
+            color: #856404;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .file-section {
+            background-color: #f1f8ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px dashed #007bff;
+        }
+
+        .file-list {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .file-item {
+            margin-bottom: 5px;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item a {
+            color: #007bff;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .file-item a:hover {
+            text-decoration: underline;
+        }
+
+        input[type="file"] {
+            margin-bottom: 5px;
+            width: 100%;
+        }
+
+        /* 新增：工具列樣式 */
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .toolbar button {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            margin-bottom: 0;
+            background-color: #6c757d;
+        }
+
+        .toolbar button:hover {
+            background-color: #5a6268;
+        }
+
+        .toolbar button.btn-blue {
+            background-color: #007bff;
+        }
+
+        .toolbar button.btn-blue:hover {
+            background-color: #0069d9;
+        }
+
+        .toolbar button.btn-green {
+            background-color: #28a745;
+        }
+
+        .toolbar button.btn-green:hover {
+            background-color: #218838;
+        }
+
+        .toolbar button.btn-delete {
+            background-color: #dc3545;
+        }
+
+        .toolbar button.btn-delete:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h2>📝 雲端隨身筆記</h2>
@@ -42,13 +190,20 @@
 
         <div id="editor-section">
             <p style="text-align: right; margin: 0 0 10px 0;">目前登入：<strong id="display-user"></strong></p>
+
+            <div class="toolbar">
+                <button class="btn-blue" onclick="selectAll()">📑 全選</button>
+                <button class="btn-green" onclick="copyAll()">📋 全複製</button>
+                <button class="btn-delete" onclick="deleteAllContent()">🗑️ 全刪除</button>
+            </div>
+
             <textarea id="content" placeholder="在這裡貼上或輸入無限長度的文字..."></textarea>
-            
+
             <div class="file-section">
                 <strong>📁 附加檔案 (不限格式)</strong>
                 <div style="font-size: 12px; color: #666; margin-bottom: 10px;">檔案會隨文章一起儲存。建議單次上傳總大小不要超過 10MB。</div>
                 <input type="file" id="file-upload" multiple />
-                
+
                 <div id="server-files-container" style="display: none; margin-top: 15px;">
                     <strong>雲端現有檔案 (點擊下載)：</strong>
                     <div id="file-list" class="file-list"></div>
@@ -134,7 +289,7 @@
                     document.getElementById('editor-section').style.display = 'block';
                     document.getElementById('display-user').textContent = currentUsername;
                     contentEl.value = data.content || "";
-                    
+
                     renderFiles(data.files);
 
                     editorMsg.textContent = data.message;
@@ -142,9 +297,9 @@
                 } else if (action === 'write') {
                     editorMsg.textContent = data.message;
                     editorMsg.className = "msg-box success";
-                    fileInput.value = ""; 
-                    
-                    if(filesData.length > 0) {
+                    fileInput.value = "";
+
+                    if (filesData.length > 0) {
                         handleAction('read');
                     } else {
                         setTimeout(() => editorMsg.textContent = "", 3000);
@@ -168,12 +323,12 @@
                 files.forEach(f => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'file-item';
-                    
+
                     const link = document.createElement('a');
                     link.href = f.data;
                     link.download = f.name;
                     link.textContent = '📎 ' + f.name;
-                    
+
                     itemDiv.appendChild(link);
                     fileList.appendChild(itemDiv);
                 });
@@ -196,6 +351,33 @@
             document.getElementById('auth-section').style.display = 'block';
             document.getElementById('editor-section').style.display = 'none';
         }
+
+        // 新增：批次操作功能
+        function selectAll() {
+            const contentEl = document.getElementById('content');
+            contentEl.select();
+            contentEl.focus();
+        }
+
+        async function copyAll() {
+            const contentEl = document.getElementById('content');
+            try {
+                await navigator.clipboard.writeText(contentEl.value);
+                const editorMsg = document.getElementById('editor-msg');
+                editorMsg.textContent = "✅ 已複製到剪貼簿";
+                editorMsg.className = "msg-box success";
+                setTimeout(() => editorMsg.textContent = "", 2000);
+            } catch (err) {
+                alert("複製失敗：" + err);
+            }
+        }
+
+        function deleteAllContent() {
+            if (confirm("確定欲清空所有文字內容嗎？（此動作無法復原）")) {
+                document.getElementById('content').value = "";
+            }
+        }
     </script>
 </body>
+
 </html>

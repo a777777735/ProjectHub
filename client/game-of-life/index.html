@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上帝視角 - 終極母體版 (11 IN 1)</title>
+    <style>
+        body {
+            margin: 0; padding: 0; overflow: hidden; 
+            background-color: #000; font-family: 'Courier New', Courier, monospace; 
+            user-select: none; 
+        }
+        #simCanvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+        
+        #hintOverlay {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 20, 0, 0.85); color: #0f0;
+            padding: 10px 25px; border-radius: 4px; font-size: 14px;
+            pointer-events: none; border: 1px solid #0f0;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            transition: opacity 1s ease-in-out; opacity: 1; z-index: 10;
+        }
+
+        #contextMenu {
+            position: absolute; display: none; background: rgba(0, 10, 0, 0.95); 
+            border: 1px solid #0f0; padding: 8px 0; min-width: 260px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2); z-index: 100;
+        }
+
+        .menu-item {
+            padding: 8px 20px; color: #0c0; font-size: 14px;
+            cursor: pointer; display: flex; align-items: center;
+        }
+
+        .menu-item:hover, .menu-item.active { background: #0f0; color: #000; font-weight: bold; }
+        .menu-divider { height: 1px; background: rgba(0, 255, 0, 0.3); margin: 6px 0; }
+        .menu-header {
+            padding: 5px 20px 8px; font-size: 12px; color: #0f0;
+            letter-spacing: 1px; text-transform: uppercase;
+            border-bottom: 1px dashed #0f0; margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="simCanvas"></canvas>
+    <div id="hintOverlay">[ SYSTEM ] 終極母體載入完成。點擊「右鍵」開啟 11 種模擬核心。</div>
+
+    <div id="contextMenu">
+        <div class="menu-header">ROOT@UNIVERSE:~#</div>
+        <div class="menu-item active" data-sim="matrix"> 0. 數位雨 (Matrix Rain)</div>
+        <div class="menu-item" data-sim="ant"> 1. 蘭頓螞蟻 (Langton's Ant)</div>
+        <div class="menu-item" data-sim="boids"> 2. 鳥群模擬 (Boids Flock)</div>
+        <div class="menu-item" data-sim="sand"> 3. 落沙沙盒 (Falling Sand)</div>
+        <div class="menu-item" data-sim="rd"> 4. 圖靈斑紋 (Turing Pattern)</div>
+        <div class="menu-item" data-sim="plife"> 5. 粒子生命 (Particle Life)</div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-sim="wolfram"> 6. 沃爾夫勒姆 1D (Rule 30)</div>
+        <div class="menu-item" data-sim="ripple"> 7. 數位波紋 (Wave Equation)</div>
+        <div class="menu-item" data-sim="gravity"> 8. 引力奇異點 (N-Body Orbit)</div>
+        <div class="menu-item" data-sim="fractal"> 9. 碎形神經樹 (Fractal Tree)</div>
+        <div class="menu-item" data-sim="cloth"> 10. 賽博布料 (Verlet Cloth)</div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" id="resetBtn" style="color: #f00;"> sudo reboot</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const hintOverlay = document.getElementById('hintOverlay');
+        const contextMenu = document.getElementById('contextMenu');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        let activeEngine = null;
+        let currentSimId = 'matrix';
+        let animationFrameId;
+
+        // 全域滑鼠與鍵盤
+        const mouse = { x: -1000, y: -1000, px: -1000, py: -1000, vx: 0, vy: 0, isDown: false, isClicked: false };
+        let shiftPressed = false;
+
+        window.addEventListener('keydown', (e) => { if(e.key === 'Shift') shiftPressed = true; });
+        window.addEventListener('keyup', (e) => { if(e.key === 'Shift') shiftPressed = false; });
+
+        function updateMousePos(e) { 
+            mouse.px = mouse.x; mouse.py = mouse.y; 
+            mouse.x = e.clientX; mouse.y = e.clientY; 
+            mouse.vx = mouse.x - mouse.px; mouse.vy = mouse.y - mouse.py;
+        }
+
+        canvas.addEventListener('mousedown', (e) => { if (e.button === 0) { mouse.isDown = true; mouse.isClicked = true; updateMousePos(e); } });
+        canvas.addEventListener('mousemove', updateMousePos);
+        window.addEventListener('mouseup', () => { mouse.isDown = false; });
+
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); 
+            let menuX = e.clientX, menuY = e.clientY;
+            contextMenu.style.display = 'block';
+            if (menuX + contextMenu.offsetWidth > width) menuX -= contextMenu.offsetWidth;
+            if (menuY + contextMenu.offsetHeight > height) menuY -= contextMenu.offsetHeight;
+            contextMenu.style.left = `${menuX}px`; contextMenu.style.top = `${menuY}px`;
+        });
+
+        window.addEventListener('click', (e) => { if (!contextMenu.contains(e.target)) contextMenu.style.display = 'none'; });
+        window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; if (activeEngine) switchEngine(currentSimId); });
+
+        function showHint(text) {
+            hintOverlay.innerHTML = text; hintOverlay.style.opacity = '1';
+            clearTimeout(window.hintTimeout); window.hintTimeout = setTimeout(() => { hintOverlay.style.opacity = '0'; }, 4000);
+        }
+
+        // ==========================================
+        // 核心引擎庫 (11 套模擬系統)
+        // ==========================================
+
+        // 0. 數位雨
+        class MatrixEngine {
+            constructor() {
+                this.fontSize = 18; this.columns = Math.floor(width / this.fontSize);
+                this.drops = []; this.chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*アイウエオカキクケコサシスセソ';
+                for(let x = 0; x < this.columns; x++) this.drops[x] = Math.random() * -100;
+            }
+            init() { showHint('[ SYS ] 母體連線。進階：滑鼠劃過代碼可產生數據損毀 (Glitch)。'); }
+            update() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'; ctx.fillRect(0, 0, width, height);
+                ctx.font = this.fontSize + 'px monospace';
+                for(let i = 0; i < this.drops.length; i++) {
+                    let text = this.chars.charAt(Math.floor(Math.random() * this.chars.length));
+                    ctx.fillStyle = Math.random() > 0.95 ? '#FFF' : '#0F0';
+                    let dropX = i * this.fontSize, dropY = this.drops[i] * this.fontSize, offsetX = 0;
+                    let dx = mouse.x - dropX, dy = mouse.y - dropY;
+                    if (Math.sqrt(dx*dx + dy*dy) < 120) { offsetX = (dx / Math.sqrt(dx*dx + dy*dy)) * -15; ctx.fillStyle = '#f00'; text = 'ERR'; }
+                    ctx.fillText(text, dropX + offsetX, dropY);
+                    if(dropY > height && Math.random() > 0.975) this.drops[i] = 0;
+                    this.drops[i]++;
+                }
+            }
+        }
+
+        // 1. 蘭頓螞蟻
+        class AntEngine {
+            constructor() {
+                this.res = 4; this.cols = Math.ceil(width/this.res); this.rows = Math.ceil(height/this.res);
+                this.grid = new Array(this.cols).fill(0).map(() => new Array(this.rows).fill(0));
+                this.ants = [{ x: Math.floor(this.cols/2), y: Math.floor(this.rows/2), dir: 0 }]; this.steps = 250; 
+            }
+            init() { ctx.fillStyle = '#000'; ctx.fillRect(0,0,width,height); showHint('[ SYS ] 點擊畫布部署新螞蟻。'); }
+            update() {
+                if (mouse.isClicked) { let cx=Math.floor(mouse.x/this.res), cy=Math.floor(mouse.y/this.res); if(cx>=0 && cx<this.cols && cy>=0 && cy<this.rows) this.ants.push({x:cx, y:cy, dir:0}); }
+                for(let i=0; i<this.steps; i++) {
+                    for(let a of this.ants) {
+                        if (a.x < 0) a.x = this.cols - 1; else if (a.x >= this.cols) a.x = 0;
+                        if (a.y < 0) a.y = this.rows - 1; else if (a.y >= this.rows) a.y = 0;
+                        let state = this.grid[a.x][a.y];
+                        if(state === 0) { a.dir = (a.dir + 1) % 4; this.grid[a.x][a.y] = 1; } else { a.dir = (a.dir + 3) % 4; this.grid[a.x][a.y] = 0; }
+                        ctx.fillStyle = state === 0 ? '#3b82f6' : '#000'; ctx.fillRect(a.x * this.res, a.y * this.res, this.res, this.res);
+                        if(a.dir === 0) a.y--; else if(a.dir === 1) a.x++; else if(a.dir === 2) a.y++; else if(a.dir === 3) a.x--;
+                    }
+                }
+                ctx.fillStyle = '#f00'; for(let a of this.ants) ctx.fillRect(a.x * this.res, a.y * this.res, this.res, this.res);
+            }
+        }
+
+        // 2. 鳥群
+        class BoidsEngine {
+            constructor() {
+                this.boids = []; for(let i=0; i<300; i++) this.boids.push({ x: Math.random()*width, y: Math.random()*height, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5 });
+            }
+            init() { showHint('[ SYS ] 鳥群掛載。按住左鍵產生引力黑洞。'); }
+            update() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; ctx.fillRect(0,0,width,height);
+                for(let b of this.boids) {
+                    let alignX=0, alignY=0, cohX=0, cohY=0, sepX=0, sepY=0, total=0;
+                    for(let other of this.boids) {
+                        if(b === other) continue; let dx = other.x-b.x, dy = other.y-b.y, d = Math.sqrt(dx*dx + dy*dy);
+                        if(d < 60) { alignX+=other.vx; alignY+=other.vy; cohX+=other.x; cohY+=other.y; if(d<20){sepX-=dx/d; sepY-=dy/d;} total++; }
+                    }
+                    if(total > 0) { b.vx += (alignX/total)*0.05 + ((cohX/total)-b.x)*0.01 + sepX*0.05; b.vy += (alignY/total)*0.05 + ((cohY/total)-b.y)*0.01 + sepY*0.05; }
+                    let mdx = mouse.x - b.x, mdy = mouse.y - b.y, md = Math.sqrt(mdx*mdx + mdy*mdy);
+                    if (mouse.isDown) { b.vx += mdx * 0.02; b.vy += mdy * 0.02; } else if (md < 120) { b.vx -= mdx * 0.05; b.vy -= mdy * 0.05; }
+                    let speed = Math.sqrt(b.vx*b.vx + b.vy*b.vy); if(speed > 5) { b.vx=(b.vx/speed)*5; b.vy=(b.vy/speed)*5; }
+                    b.x += b.vx; b.y += b.vy;
+                    if(b.x<-10) b.x=width+10; if(b.x>width+10) b.x=-10; if(b.y<-10) b.y=height+10; if(b.y>height+10) b.y=-10;
+                    ctx.fillStyle = '#0ff'; ctx.fillRect(b.x, b.y, 3, 3);
+                }
+            }
+        }
+
+        // 3. 落沙沙盒
+        class SandEngine {
+            constructor() {
+                this.res = 6; this.cols = Math.ceil(width/this.res); this.rows = Math.ceil(height/this.res);
+                this.grid = new Array(this.cols).fill(0).map(() => new Array(this.rows).fill(0));
+            }
+            init() { showHint('[ SYS ] 物理沙盒。左鍵落沙，Shift+左鍵繪製石牆。'); }
+            update() {
+                ctx.fillStyle = '#000'; ctx.fillRect(0,0,width,height);
+                if(mouse.isDown) {
+                    let cx=Math.floor(mouse.x/this.res), cy=Math.floor(mouse.y/this.res), b=Math.min(Math.floor(Math.sqrt(mouse.vx*mouse.vx+mouse.vy*mouse.vy)/5)+2, 6);
+                    for(let i=-b; i<=b; i++) for(let j=-b; j<=b; j++) if(cx+i>=0 && cx+i<this.cols && cy+j>=0 && cy+j<this.rows) {
+                        if (shiftPressed) this.grid[cx+i][cy+j] = 2; else if(Math.random()>0.3 && this.grid[cx+i][cy+j]===0) this.grid[cx+i][cy+j] = 1;
+                    }
+                }
+                for(let y=this.rows-2; y>=0; y--) {
+                    let dir = Math.random()>0.5?1:-1;
+                    for(let x=0; x<this.cols; x++) {
+                        let cx = dir===1?x:this.cols-1-x;
+                        if(this.grid[cx][y]===1) {
+                            if(this.grid[cx][y+1]===0) { this.grid[cx][y+1]=1; this.grid[cx][y]=0; }
+                            else {
+                                let bl=cx>0&&this.grid[cx-1][y+1]===0, br=cx<this.cols-1&&this.grid[cx+1][y+1]===0;
+                                if(bl&&br) { if(Math.random()>0.5){this.grid[cx-1][y+1]=1;this.grid[cx][y]=0;} else {this.grid[cx+1][y+1]=1;this.grid[cx][y]=0;} }
+                                else if(bl) {this.grid[cx-1][y+1]=1;this.grid[cx][y]=0;} else if(br) {this.grid[cx+1][y+1]=1;this.grid[cx][y]=0;}
+                            }
+                        }
+                    }
+                }
+                for(let x=0; x<this.cols; x++) for(let y=0; y<this.rows; y++) {
+                    if(this.grid[x][y]===1){ctx.fillStyle='#ffb86c';ctx.fillRect(x*this.res,y*this.res,this.res,this.res);}
+                    else if(this.grid[x][y]===2){ctx.fillStyle='#6272a4';ctx.fillRect(x*this.res,y*this.res,this.res,this.res);}
+                }
+            }
+        }
+
+        // 4. 圖靈斑紋
+        class RDEngine {
+            constructor() {
+                this.res = 4; this.w = Math.ceil(width/this.res); this.h = Math.ceil(height/this.res);
+                this.grid = []; this.next = [];
+                for(let x=0; x<this.w; x++) { this.grid[x]=[]; this.next[x]=[]; for(let y=0; y<this.h; y++) { this.grid[x][y]={a:1,b:0}; this.next[x][y]={a:1,b:0}; } }
+                for(let k=0; k<8; k++){ let px=Math.floor(Math.random()*(this.w-40)+20), py=Math.floor(Math.random()*(this.h-40)+20); for(let i=px-10; i<px+10; i++) for(let j=py-10; j<py+10; j++) this.grid[i][j].b=1; }
+                this.imgData = ctx.createImageData(this.w, this.h);
+            }
+            init() { showHint('[ SYS ] 圖靈斑紋。滑鼠快速移動可擴大滴入範圍。'); }
+            update() {
+                for(let iter=0; iter<6; iter++) {
+                    if(mouse.isDown) {
+                        let mx=Math.floor(mouse.x/this.res), my=Math.floor(mouse.y/this.res), brush=Math.min(Math.floor(Math.sqrt(mouse.vx*mouse.vx+mouse.vy*mouse.vy)/10)+3, 12);
+                        for(let i=-brush; i<=brush; i++) for(let j=-brush; j<=brush; j++) if(mx+i>0 && mx+i<this.w-1 && my+j>0 && my+j<this.h-1) this.grid[mx+i][my+j].b = 1;
+                    }
+                    for(let x=1; x<this.w-1; x++) for(let y=1; y<this.h-1; y++) {
+                        let a=this.grid[x][y].a, b=this.grid[x][y].b, lapA = -a + this.grid[x-1][y].a*0.2 + this.grid[x+1][y].a*0.2 + this.grid[x][y-1].a*0.2 + this.grid[x][y+1].a*0.2 + this.grid[x-1][y-1].a*0.05 + this.grid[x+1][y-1].a*0.05 + this.grid[x+1][y+1].a*0.05 + this.grid[x-1][y+1].a*0.05;
+                        let lapB = -b + this.grid[x-1][y].b*0.2 + this.grid[x+1][y].b*0.2 + this.grid[x][y-1].b*0.2 + this.grid[x][y+1].b*0.2 + this.grid[x-1][y-1].b*0.05 + this.grid[x+1][y-1].b*0.05 + this.grid[x+1][y+1].b*0.05 + this.grid[x-1][y+1].b*0.05;
+                        this.next[x][y].a = Math.max(0, Math.min(1, a + (1.0*lapA - a*b*b + 0.055*(1-a))));
+                        this.next[x][y].b = Math.max(0, Math.min(1, b + (0.5*lapB + a*b*b - 0.117*b)));
+                    }
+                    let temp = this.grid; this.grid = this.next; this.next = temp;
+                }
+                for(let x=0; x<this.w; x++) for(let y=0; y<this.h; y++) {
+                    let c = Math.max(0, Math.min(255, Math.floor((this.grid[x][y].a - this.grid[x][y].b) * 255)));
+                    let pix = (x + y*this.w)*4; this.imgData.data[pix]=0; this.imgData.data[pix+1]=c; this.imgData.data[pix+2]=Math.min(c+50,255); this.imgData.data[pix+3]=255;
+                }
+                let tc = document.createElement('canvas'); tc.width=this.w; tc.height=this.h; tc.getContext('2d').putImageData(this.imgData,0,0);
+                ctx.clearRect(0,0,width,height); ctx.drawImage(tc,0,0,width,height);
+            }
+        }
+
+        // 5. 粒子生命
+        class ParticleLifeEngine {
+            constructor() {
+                this.num = Math.min(Math.max(Math.floor((width*height)/4000), 500), 1200); this.particles = [];
+                this.colors = ['#ff79c6', '#8be9fd', '#50fa7b', '#f1fa8c', '#bd93f9', '#ff5555']; this.rules = [];
+                for(let i=0; i<6; i++) { this.rules[i]=[]; for(let j=0; j<6; j++) this.rules[i][j]=(Math.random()-0.5)*2; }
+                for(let i=0; i<this.num; i++) this.particles.push({x:Math.random()*width, y:Math.random()*height, vx:0, vy:0, c:Math.floor(Math.random()*6)});
+            }
+            init() { showHint('[ SYS ] 粒子生命。按住滑鼠左鍵釋放強制凝聚力場。'); }
+            update() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; ctx.fillRect(0,0,width,height);
+                for(let i=0; i<this.num; i++) {
+                    let p1 = this.particles[i], fx=0, fy=0;
+                    for(let j=0; j<this.num; j++) {
+                        if(i===j) continue; let p2=this.particles[j], dx=p1.x-p2.x, dy=p1.y-p2.y, d=Math.sqrt(dx*dx+dy*dy);
+                        if(d>0 && d<90) { let f=d<12?2.5:this.rules[p1.c][p2.c]*0.15; fx+=(dx/d)*f; fy+=(dy/d)*f; }
+                    }
+                    if(mouse.isDown) { let dx=mouse.x-p1.x, dy=mouse.y-p1.y, d=Math.sqrt(dx*dx+dy*dy); if(d>20) {fx+=(dx/d)*2; fy+=(dy/d)*2;} }
+                    p1.vx=(p1.vx+fx)*0.4; p1.vy=(p1.vy+fy)*0.4; p1.x+=p1.vx; p1.y+=p1.vy;
+                    if(p1.x<=5||p1.x>=width-5)p1.vx*=-1; if(p1.y<=5||p1.y>=height-5)p1.vy*=-1;
+                    p1.x=Math.max(5,Math.min(width-5,p1.x)); p1.y=Math.max(5,Math.min(height-5,p1.y));
+                    ctx.fillStyle=this.colors[p1.c]; ctx.fillRect(p1.x, p1.y, 4, 4);
+                }
+            }
+        }
+
+        // 6. Wolfram 1D (Rule 30) - 新增
+        class WolframEngine {
+            constructor() {
+                this.res = 6; this.cols = Math.floor(width/this.res); this.rows = Math.floor(height/this.res);
+                this.grid = new Array(this.rows).fill(0).map(()=>new Array(this.cols).fill(0));
+                this.grid[0][Math.floor(this.cols/2)] = 1; // 初始種子
+                this.currentRow = 0;
+            }
+            init() { ctx.fillStyle='#000'; ctx.fillRect(0,0,width,height); showHint('[ SYS ] 沃爾夫勒姆 1D (Rule 30)。點擊滑鼠注入擾動種子。'); }
+            update() {
+                if (mouse.isDown) { let cx=Math.floor(mouse.x/this.res); if(cx>=0 && cx<this.cols) this.grid[this.currentRow][cx] = 1; }
+                let nextRow = (this.currentRow + 1) % this.rows;
+                for(let i=0; i<this.cols; i++) {
+                    let left = this.grid[this.currentRow][(i-1+this.cols)%this.cols];
+                    let center = this.grid[this.currentRow][i];
+                    let right = this.grid[this.currentRow][(i+1)%this.cols];
+                    // Rule 30 logic: 111->0, 110->0, 101->0, 100->1, 011->1, 010->1, 001->1, 000->0
+                    let state = (left<<2) | (center<<1) | right;
+                    this.grid[nextRow][i] = (state>0 && state<5) ? 1 : 0;
+                }
+                
+                // 上推畫面效果
+                ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.fillRect(0,0,width,height);
+                for(let r=0; r<this.rows; r++) {
+                    let drawY = (this.rows - 1 - ((this.currentRow - r + this.rows) % this.rows)) * this.res;
+                    for(let c=0; c<this.cols; c++) {
+                        if(this.grid[r][c]===1) { ctx.fillStyle='#0f0'; ctx.fillRect(c*this.res, drawY, this.res, this.res); }
+                    }
+                }
+                this.currentRow = nextRow;
+            }
+        }
+
+        // 7. 數位波紋干涉 - 新增
+        class RippleEngine {
+            constructor() {
+                this.res = 4; this.cols = Math.ceil(width/this.res); this.rows = Math.ceil(height/this.res);
+                this.curr = new Array(this.cols).fill(0).map(()=>new Array(this.rows).fill(0));
+                this.prev = new Array(this.cols).fill(0).map(()=>new Array(this.rows).fill(0));
+                this.imgData = ctx.createImageData(this.cols, this.rows);
+            }
+            init() { showHint('[ SYS ] 數位波紋。按住拖曳滑鼠製造水波干涉。'); }
+            update() {
+                if(mouse.isDown) {
+                    let cx=Math.floor(mouse.x/this.res), cy=Math.floor(mouse.y/this.res);
+                    for(let i=-2; i<=2; i++) for(let j=-2; j<=2; j++) if(cx+i>0 && cx+i<this.cols-1 && cy+j>0 && cy+j<this.rows-1) this.prev[cx+i][cy+j] = 255;
+                }
+                for(let x=1; x<this.cols-1; x++) {
+                    for(let y=1; y<this.rows-1; y++) {
+                        this.curr[x][y] = (this.prev[x-1][y]+this.prev[x+1][y]+this.prev[x][y-1]+this.prev[x][y+1])/2 - this.curr[x][y];
+                        this.curr[x][y] *= 0.98; // 阻尼
+                        let val = Math.max(0, Math.min(255, this.curr[x][y]));
+                        let pix = (x + y*this.cols)*4;
+                        this.imgData.data[pix]=0; this.imgData.data[pix+1]=val*0.8; this.imgData.data[pix+2]=val; this.imgData.data[pix+3]=255;
+                    }
+                }
+                let temp = this.curr; this.curr = this.prev; this.prev = temp;
+                let tc = document.createElement('canvas'); tc.width=this.cols; tc.height=this.rows; tc.getContext('2d').putImageData(this.imgData,0,0);
+                ctx.fillStyle='#000'; ctx.fillRect(0,0,width,height);
+                ctx.drawImage(tc,0,0,width,height);
+            }
+        }
+
+        // 8. 引力奇異點 (N-Body) - 新增
+        class GravityEngine {
+            constructor() {
+                this.planets = [];
+                for(let i=0; i<200; i++) {
+                    let angle = Math.random()*Math.PI*2, dist = 100 + Math.random()*300;
+                    let speed = Math.sqrt(2000 / dist); // 基礎軌道速度
+                    this.planets.push({ x: width/2 + Math.cos(angle)*dist, y: height/2 + Math.sin(angle)*dist, vx: -Math.sin(angle)*speed, vy: Math.cos(angle)*speed, mass: 1+Math.random()*3 });
+                }
+                this.blackholes = [{x:width/2, y:height/2, mass: 2000}];
+            }
+            init() { ctx.fillStyle='#000'; ctx.fillRect(0,0,width,height); showHint('[ SYS ] 軌道力學。點擊左鍵產生新的超大質量黑洞。'); }
+            update() {
+                ctx.fillStyle='rgba(0,0,0,0.15)'; ctx.fillRect(0,0,width,height); // 殘影
+                
+                if (mouse.isClicked) this.blackholes.push({x: mouse.x, y: mouse.y, mass: 1500});
+
+                for(let p of this.planets) {
+                    for(let bh of this.blackholes) {
+                        let dx = bh.x - p.x, dy = bh.y - p.y;
+                        let distSq = dx*dx + dy*dy;
+                        if(distSq > 100) { // 防止除以零且不讓力無限大
+                            let force = bh.mass / distSq;
+                            let dist = Math.sqrt(distSq);
+                            p.vx += (dx/dist) * force; p.vy += (dy/dist) * force;
+                        }
+                    }
+                    p.x += p.vx; p.y += p.vy;
+                    ctx.fillStyle = '#f1fa8c'; ctx.beginPath(); ctx.arc(p.x, p.y, p.mass, 0, Math.PI*2); ctx.fill();
+                }
+
+                ctx.fillStyle = '#ff5555';
+                for(let bh of this.blackholes) {
+                    ctx.beginPath(); ctx.arc(bh.x, bh.y, 6, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,85,85,0.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(bh.x, bh.y, 15+Math.random()*5, 0, Math.PI*2); ctx.stroke();
+                }
+            }
+        }
+
+        // 9. 碎形神經樹 - 新增
+        class FractalEngine {
+            constructor() {}
+            init() { showHint('[ SYS ] 碎形生成演算法。移動滑鼠即時改變樹枝角度與深度。'); }
+            drawBranch(x, y, len, angle, depth, maxDepth, spread) {
+                if(depth === 0) return;
+                let endX = x + Math.cos(angle) * len;
+                let endY = y + Math.sin(angle) * len;
+                
+                ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(endX, endY);
+                // 顏色隨深度漸變
+                let ratio = depth/maxDepth;
+                ctx.strokeStyle = `rgb(0, ${Math.floor(255*ratio)}, ${Math.floor(255*(1-ratio))})`;
+                ctx.lineWidth = depth * 0.8; ctx.stroke();
+
+                this.drawBranch(endX, endY, len * 0.75, angle - spread, depth - 1, maxDepth, spread);
+                this.drawBranch(endX, endY, len * 0.75, angle + spread, depth - 1, maxDepth, spread);
+            }
+            update() {
+                ctx.fillStyle='#000'; ctx.fillRect(0,0,width,height);
+                // 滑鼠X控制角度，滑鼠Y控制層數
+                let spread = mouse.x > 0 ? (mouse.x / width) * Math.PI : Math.PI / 4;
+                let maxDepth = mouse.y > 0 ? Math.floor((1 - mouse.y / height) * 8) + 3 : 8;
+                maxDepth = Math.min(11, maxDepth); // 保護效能
+                
+                this.drawBranch(width/2, height, height/4, -Math.PI/2, maxDepth, maxDepth, spread);
+            }
+        }
+
+        // 10. 賽博布料 (Verlet Physics) - 新增
+        class ClothEngine {
+            constructor() {
+                this.pts = []; this.links = [];
+                let spacing = 15, cols = Math.floor(width*0.6/spacing), rows = 30;
+                let startX = width/2 - (cols*spacing)/2;
+                
+                for(let y=0; y<rows; y++) {
+                    for(let x=0; x<cols; x++) {
+                        let p = { x: startX+x*spacing, y: 50+y*spacing, px: startX+x*spacing, py: 50+y*spacing, pinned: y===0 };
+                        this.pts.push(p);
+                        if(x > 0) this.links.push({ p1: p, p2: this.pts[this.pts.length-2], dist: spacing });
+                        if(y > 0) this.links.push({ p1: p, p2: this.pts[(y-1)*cols+x], dist: spacing });
+                    }
+                }
+            }
+            init() { showHint('[ SYS ] 賽博布料約束系統。按住左鍵可拖拽，快速滑過可撕裂布料。'); }
+            update() {
+                ctx.fillStyle='#000'; ctx.fillRect(0,0,width,height);
+                
+                // 點的積分
+                for(let p of this.pts) {
+                    if(p.pinned) continue;
+                    let vx = (p.x - p.px) * 0.99, vy = (p.y - p.py) * 0.99;
+                    p.px = p.x; p.py = p.y;
+                    p.x += vx; p.y += vy + 0.3; // 重力
+                    
+                    // 滑鼠互動：拖拽或撕裂
+                    if(mouse.isDown) {
+                        let dx = p.x - mouse.x, dy = p.y - mouse.y, dist = Math.sqrt(dx*dx+dy*dy);
+                        if(dist < 30) {
+                            if(Math.sqrt(mouse.vx*mouse.vx + mouse.vy*mouse.vy) > 15) p.x += mouse.vx; // 速度快則撕裂(力氣大)
+                            else { p.x += mouse.vx*0.5; p.y += mouse.vy*0.5; } // 拖曳
+                        }
+                    }
+                }
+
+                // 彈簧約束放鬆 (執行 3 次穩定網格)
+                for(let i=0; i<3; i++) {
+                    for(let j=this.links.length-1; j>=0; j--) {
+                        let link = this.links[j];
+                        let dx = link.p2.x - link.p1.x, dy = link.p2.y - link.p1.y, d = Math.sqrt(dx*dx+dy*dy);
+                        if(d > link.dist * 3.5) { this.links.splice(j, 1); continue; } // 撕裂斷開條件
+                        let diff = (link.dist - d) / d * 0.5;
+                        let offsetX = dx * diff, offsetY = dy * diff;
+                        if(!link.p1.pinned) { link.p1.x -= offsetX; link.p1.y -= offsetY; }
+                        if(!link.p2.pinned) { link.p2.x += offsetX; link.p2.y += offsetY; }
+                    }
+                }
+
+                // 繪製布料
+                ctx.strokeStyle = '#bd93f9'; ctx.lineWidth = 1; ctx.beginPath();
+                for(let link of this.links) { ctx.moveTo(link.p1.x, link.p1.y); ctx.lineTo(link.p2.x, link.p2.y); }
+                ctx.stroke();
+            }
+        }
+
+        // ==========================================
+        // 統籌系統
+        // ==========================================
+        const engines = { matrix:MatrixEngine, ant:AntEngine, boids:BoidsEngine, sand:SandEngine, rd:RDEngine, plife:ParticleLifeEngine, wolfram:WolframEngine, ripple:RippleEngine, gravity:GravityEngine, fractal:FractalEngine, cloth:ClothEngine };
+
+        function switchEngine(simId) {
+            currentSimId = simId; cancelAnimationFrame(animationFrameId);
+            activeEngine = new engines[simId](); activeEngine.init();
+            document.querySelectorAll('.menu-item[data-sim]').forEach(item => { item.classList.remove('active'); if(item.getAttribute('data-sim')===simId) item.classList.add('active'); });
+            function loop() { activeEngine.update(); mouse.isClicked = false; animationFrameId = requestAnimationFrame(loop); }
+            loop();
+        }
+
+        document.querySelectorAll('.menu-item[data-sim]').forEach(item => { item.addEventListener('click', (e) => { contextMenu.style.display = 'none'; switchEngine(e.target.getAttribute('data-sim')); }); });
+        document.getElementById('resetBtn').addEventListener('click', () => { contextMenu.style.display = 'none'; switchEngine(currentSimId); });
+
+        switchEngine('matrix');
+
+    </script>
+</body>
+</html>

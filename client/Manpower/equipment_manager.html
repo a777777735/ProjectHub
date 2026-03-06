@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設備與廠商配置管理 (局部獨立畫板版)</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            color: #334155;
+        }
+        .header-row {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px solid #cbd5e1; padding-bottom: 12px; margin-bottom: 20px;
+        }
+        .header-row h2 { margin: 0; color: #0f172a; font-size: 24px; }
+        .btn-link { background-color: #64748b; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+        .btn-link:hover { background-color: #475569; }
+
+        /* ================= 頁籤與動作列 ================= */
+        .db-tabs { display: flex; border-bottom: 2px solid #ccc; margin-bottom: 15px; gap: 5px; flex-wrap: wrap; }
+        .db-tab-btn {
+            background: #f1f1f1; color: #333; border-radius: 6px 6px 0 0; padding: 10px 20px; font-weight: bold;
+            cursor: pointer; border: none; outline: none; transition: 0.2s; font-size: 14px;
+        }
+        .db-tab-btn:hover { filter: brightness(0.95); }
+        .db-tab-content { display: none; }
+        .db-tab-content.active { display: block; }
+
+        .action-bar {
+            padding: 15px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+        }
+        .action-bar select, .action-bar input {
+            padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; min-width: 120px; flex: 1; outline: none; transition: 0.2s;
+        }
+        .action-bar select:disabled { background-color: #f8fafc; color: #94a3b8; cursor: not-allowed; }
+        .action-bar select:focus, .action-bar input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px #eff6ff; }
+        
+        button.btn-add {
+            padding: 8px 20px; font-size: 14px; cursor: pointer; border: none; border-radius: 4px;
+            color: white; font-weight: bold; transition: 0.2s; white-space: nowrap; height: 36px;
+        }
+        button.btn-add:hover { filter: brightness(1.1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); transform: translateY(-1px); }
+        
+        .btn-danger { background-color: #fee2e2; color: #ef4444; border: 1px solid #fecaca; padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .btn-danger:hover { background-color: #fecaca; color: #b91c1c; }
+
+        .btn-icon { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 3px; padding: 2px 4px; cursor: pointer; font-size: 10px; transition: 0.2s; color: #475569; margin: 0; line-height: 1; }
+        .btn-icon:hover { background: #e2e8f0; color: #0f172a; border-color: #cbd5e1; }
+
+        /* ================= 表格樣式 (支援橫向滾動) ================= */
+        .table-container { width: 100%; overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px; background: white; }
+        .db-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: max-content; }
+        .db-table th, .db-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; padding: 10px; text-align: left; font-size: 13px; vertical-align: top; }
+        .db-table th { background-color: #f8fafc; color: #455a64; position: sticky; top: 0; font-weight: bold; border-bottom: 2px solid #cbd5e1; z-index: 10; white-space: nowrap; }
+        
+        /* 🌟 左側固定欄位 */
+        .col-info { position: sticky; left: 0; width: 220px; min-width: 220px; background: #fff; border-right: 2px solid #cbd5e1 !important; box-sizing: border-box; z-index: 5; }
+        .sticky-hdr { z-index: 15 !important; background: #f8fafc !important; }
+
+        .db-table tbody tr:hover td { background-color: #f8fafc; } 
+        .db-table tbody tr:hover td.col-info { background-color: #f1f5f9; }
+
+        /* 標籤小圖示 */
+        .tag-proj { background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block;}
+        .tag-proc { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block;}
+        .tag-loc-clickable {
+            background: #f3e8ff; color: #6b21a8; padding: 6px 10px; border-radius: 4px; font-weight: bold; font-size: 11px;
+            cursor: pointer; border: 1px dashed #c084fc; transition: 0.2s; display: inline-block; margin-bottom: 6px;
+        }
+        .tag-loc-clickable:hover { background: #e9d5ff; border-style: solid; color: #581c87; }
+        .tag-line { background: #fffbeb; color: #b45309; padding: 4px 8px; border-radius: 4px; font-weight: 900; font-size: 12px; border: 1px solid #fde68a; display: inline-block; }
+
+        .clone-badge { background: #e0f2f1; color: #00695c; border: 1px dashed #80cbc4; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 6px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s; display: inline-block; text-align: center;}
+        .clone-badge:hover { background: #b2dfdb; border-style: solid; color: #004d40; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+
+        /* 🌟 極致濃縮的一列卡片設計 (符合 6個英文字寬度 且高仿原圖) */
+        .station-card {
+            display: flex; align-items: center; gap: 6px; background: #fff; padding: 4px; 
+            border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 6px; transition: 0.2s; width: max-content;
+        }
+        .station-card:hover { border-color: #94a3b8; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+        
+        .inline-input {
+            box-sizing: border-box; outline: none; transition: 0.2s; border-radius: 4px; font-weight: bold; padding: 4px; font-size: 12px;
+        }
+        .inline-input:focus { border-color: #3b82f6 !important; box-shadow: 0 0 0 2px #eff6ff; background: #fff !important; }
+
+        /* 移除 number input 箭頭 */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* ================= Modal ================= */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 8% auto; padding: 20px 25px; border-radius: 8px; width: 90%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-top: 5px solid #a855f7; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; color: #7e22ce; display: flex; align-items: center; gap: 8px; }
+        .close { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+    </style>
+</head>
+<body>
+
+    <div class="header-row">
+        <h2>🏭 設備與廠商動態配置看板 (局部獨立畫板版)</h2>
+        <a href="index.html" class="btn-link" target="_blank">🔙 回到人力總表</a>
+    </div>
+
+    <div class="db-tabs">
+        <button class="db-tab-btn active" id="tabbtn_t1" onclick="switchDbTab('t1')" style="background-color: #0288d1; color: white;">1. 定義標準站別 (順序字典)</button>
+        <button class="db-tab-btn" id="tabbtn_t2" onclick="switchDbTab('t2')">2. 實體線體看板 (局部展開)</button>
+    </div>
+
+    <div id="tab_t1" class="db-tab-content active">
+        <div style="font-size: 13px; color: #0288d1; font-weight: bold; margin-bottom: 10px;">
+            📌 第一步：建立標準站別。新增後可使用 [▲] [▼] 調整流水線順序，將影響實體配置時的預設順序！
+        </div>
+        <div class="action-bar" style="background: #e1f5fe; border: 1px solid #81d4fa;">
+            <select id="b_project" onchange="updateBaseMacro(); renderTable1();"></select>
+            <select id="b_macro" disabled onchange="updateBaseMicro(); renderTable1();"></select>
+            <select id="b_micro" disabled onchange="renderTable1();"></select>
+            <input type="text" id="b_station" placeholder="輸入新站別名稱 (按 Enter 新增)" style="flex: 1.5; border-color: #0288d1;" onkeydown="if(event.key==='Enter') addBase();">
+            <button class="btn-add" style="background-color: #0288d1;" onclick="addBase()">➕ 加入站別</button>
+        </div>
+
+        <div class="table-container">
+            <table class="db-table" style="min-width: unset;">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">專案</th>
+                        <th style="width: 35%;">製程節點 (大製程 ➔ 小製程)</th>
+                        <th style="color:#0288d1;">流水線站別 (Station)</th>
+                        <th style="width: 120px; text-align: center;">操作與排序</th>
+                    </tr>
+                </thead>
+                <tbody id="baseTbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab_t2" class="db-tab-content">
+        <div style="font-size: 13px; color: #d84315; font-weight: bold; margin-bottom: 10px; line-height: 1.6;">
+            📌 提示 1：階段將獨立於每一列由左向右展開，徹底解決 NPI 與 Ops 階段名稱不同導致的排版空洞！<br>
+            📌 提示 2：若要跨部門移交(如 NPI -> Ops.)，點擊左側的 <span class="clone-badge" style="width:auto; padding:2px 6px; margin:0;">🚀 階段升級</span> 即可完美繼承。
+        </div>
+        
+        <div class="action-bar" style="background: #fff3e0; border: 1px solid #ffb74d;">
+            <input type="text" id="v_rp_filter" placeholder="🔍 搜尋主頁組合..." oninput="initVarDropdowns(); renderTable2();" style="flex: 0.5; border-color: #f57c00; font-weight: bold;">
+            <select id="v_rp" style="flex: 1.2; border-color: #f57c00; background: #fff8e1;" onchange="updVarCategoryAndMacro(); renderTable2();"></select>
+            
+            <select id="v_category" style="border-color: #f57c00; background: #fff8e1; font-weight: bold;" onchange="updVarPhase(); renderTable2();">
+                <option value="">-- 獨立選類別 --</option><option value="NPI">NPI</option><option value="Ops.">Ops.</option>
+            </select>
+
+            <select id="v_phase" disabled onchange="renderTable2();"></select>
+            
+            <select id="v_macro" disabled onchange="updVarMicro(); renderTable2();"></select>
+            <select id="v_micro" disabled onchange="updVarLoc(); renderTable2();"></select>
+            
+            <select id="v_location" disabled onchange="renderTable2();"></select>
+            <input type="text" id="v_line_id" placeholder="線體代號 (例: L1)" style="width: 100px; border-color: #ff9800; font-weight: bold; color: #d84315;" oninput="renderTable2();">
+            
+            <button class="btn-add" style="background-color: #ff9800; font-size: 14px;" onclick="deployPhysicalLine()">🚀 初次建線(倒入標準盤)</button>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="flt_keyword" placeholder="🔍 搜尋站別名稱或廠商..." oninput="renderTable2()" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 300px; outline: none;">
+        </div>
+
+        <div class="table-container">
+            <table class="db-table" id="matrixTable">
+                <thead id="matrixThead">
+                    <tr>
+                        <th class="col-info sticky-hdr">線體基本資訊 (專案 / 製程 / 廠區)</th>
+                        <th style="color:#d84315; padding-left: 20px; text-align: left;">各階段獨立站別配置看板 (由左向右演進) ➡️</th>
+                    </tr>
+                </thead>
+                <tbody id="variantTbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="batchMoveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🚚 產線實體整批轉移</h3>
+                <span class="close" onclick="closeModal('batchMoveModal')">&times;</span>
+            </div>
+            <div id="bm_subtitle" style="font-size:13px; color:#475569; background:#f8fafc; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #e2e8f0; line-height: 1.6;"></div>
+            <input type="hidden" id="bm_data"> 
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color:#6b21a8; font-size:14px;">1. 目標新位置 (樓層)：</label>
+                <select id="bm_new_location" style="border-color:#a855f7; padding: 10px; font-weight: bold;"></select>
+            </div>
+            <div class="form-group">
+                <label style="color:#6b21a8; font-size:14px;">2. 新線體代號 (若不變請維持原樣)：</label>
+                <input type="text" id="bm_new_line_id" style="border-color:#a855f7; padding: 10px; font-weight: bold; color: #b45309;">
+            </div>
+            <div style="margin-top: 25px; display: flex; gap: 10px;">
+                <button class="btn-add" style="background-color:#94a3b8; flex:1;" onclick="closeModal('batchMoveModal')">取消</button>
+                <button class="btn-add" style="background-color:#a855f7; flex:2;" onclick="executeBatchMove()">確認轉移與套用</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cloneLineModal" class="modal">
+        <div class="modal-content" style="border-top-color: #009688;">
+            <div class="modal-header">
+                <h3 style="color: #00796b;">🚀 複製 / 跨部門階段升級</h3>
+                <span class="close" onclick="closeModal('cloneLineModal')">&times;</span>
+            </div>
+            <div style="font-size:12px; color:#d84315; font-weight:bold; margin-bottom:10px;">
+                💡 將把來源階段所有【已微調的站別卡片、順序、QPL、廠商】繼承並向右展開到未來階段！
+            </div>
+            <div id="cl_subtitle" style="font-size:13px; color:#475569; background:#e0f2f1; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #b2dfdb; line-height: 1.6;"></div>
+            <input type="hidden" id="cl_data"> 
+            
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color:#00695c; font-size:14px;">1. 來源階段 (要複製誰？)：</label>
+                <select id="cl_source_phase" style="border-color:#26a69a; padding: 10px; font-weight: bold; background: #fff;" onchange="window.updClonePhase()"></select>
+            </div>
+            
+            <div style="width: 100%; height: 0; border-top: 1px dashed #b2dfdb; margin: 15px 0;"></div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color:#0277bd; font-size:14px;">2. 目標新類別 (跨部門移交)：</label>
+                <select id="cl_new_category" style="border-color:#0288d1; padding: 10px; font-weight: bold; background: #e1f5fe;" onchange="window.updClonePhase()">
+                    <option value="NPI">NPI</option>
+                    <option value="Ops.">Ops.</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color:#0277bd; font-size:14px;">3. 目標新階段 (Phase)：</label>
+                <select id="cl_new_phase" style="border-color:#0288d1; padding: 10px; font-weight: bold; background: #e1f5fe;"></select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color:#0277bd; font-size:14px;">4. 目標實體位置 (原地移交請留空)：</label>
+                <select id="cl_new_location" style="border-color:#0288d1; padding: 10px; font-weight: bold; background: #fff;"></select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color:#0277bd; font-size:14px;">5. 目標線體代號 (原地移交請留空)：</label>
+                <input type="text" id="cl_new_line_id" style="border-color:#0288d1; padding: 10px; font-weight: bold; color: #b45309; background: #fff;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="color:#0277bd; font-size:14px; display:flex; align-items:center; gap:8px; cursor:pointer; background:#fff; padding:10px; border:1px solid #0288d1; border-radius:4px;">
+                    <input type="checkbox" id="cl_reset_vendor" style="width:16px; height:16px;">
+                    <span style="font-weight:bold;">清除廠商資訊 (若移交後需重新分配廠商請勾選)</span>
+                </label>
+            </div>
+
+            <div style="margin-top: 25px; display: flex; gap: 10px;">
+                <button class="btn-add" style="background-color:#94a3b8; flex:1;" onclick="closeModal('cloneLineModal')">取消</button>
+                <button class="btn-add" style="background-color:#0288d1; flex:2;" onclick="executeCloneLine()">確認繼承升級</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 資料庫結構 V19
+        let baseDb = [];    
+        let deployDb = [];  
+        let mainCombos = []; 
+        let milestonesDb = [];
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        window.onclick = function (e) { if (e.target.classList && e.target.classList.contains('modal')) { e.target.style.display = 'none'; } };
+
+        function switchDbTab(tab) {
+            document.querySelectorAll('.db-tab-btn').forEach(b => { b.classList.remove('active'); b.style.backgroundColor = '#f1f1f1'; b.style.color = '#333'; });
+            document.querySelectorAll('.db-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tabbtn_' + tab).classList.add('active');
+            document.getElementById('tab_' + tab).classList.add('active');
+            if(tab === 't1') { document.getElementById('tabbtn_t1').style.backgroundColor = '#0288d1'; document.getElementById('tabbtn_t1').style.color = 'white'; } 
+            else { document.getElementById('tabbtn_t2').style.backgroundColor = '#d84315'; document.getElementById('tabbtn_t2').style.color = 'white'; }
+        }
+
+        function loadData() {
+            let savedMainData = localStorage.getItem('manpowerDataV36');
+            let savedMainDb = localStorage.getItem('manpowerDbV36');
+            if (savedMainDb) milestonesDb = JSON.parse(savedMainDb).milestones || [];
+            if (savedMainData) buildCombos(JSON.parse(savedMainData));
+
+            let savedBase = localStorage.getItem('eqBaseDbV19');
+            let savedDeploy = localStorage.getItem('eqDeployDbV19');
+            
+            // Migrate from previous versions
+            if (!savedBase && localStorage.getItem('eqBaseDbV18')) savedBase = localStorage.getItem('eqBaseDbV18');
+            if (!savedDeploy && localStorage.getItem('eqDeployDbV18')) savedDeploy = localStorage.getItem('eqDeployDbV18');
+
+            if (savedBase) baseDb = JSON.parse(savedBase);
+            if (savedDeploy) deployDb = JSON.parse(savedDeploy);
+
+            baseDb.forEach((b, i) => { if(b.orderIdx === undefined) b.orderIdx = Date.now() + i; });
+            deployDb.forEach((d, i) => { if(d.orderIdx === undefined) d.orderIdx = Date.now() + i; });
+
+            initBaseDropdowns(); initVarDropdowns(); renderTable1(); renderTable2();
+        }
+
+        function buildCombos(mainData) {
+            let comboSet = new Set(); mainCombos = [];
+            mainData.forEach(row => {
+                if (row.region && row.project && row.category && row.macro && row.micro) {
+                    let micros = row.micro.split(',').map(m => m.trim()).filter(m => m);
+                    let locArr = [row.site, row.building, row.floor].filter(Boolean);
+                    let locStr = locArr.length > 0 ? locArr.join(' - ') : "未指定位置";
+                    micros.forEach(mic => {
+                        let key = `${row.region}|${row.project}|${row.category}|${row.macro}|${mic}|${locStr}`;
+                        if (!comboSet.has(key)) { comboSet.add(key); mainCombos.push({ region: row.region, project: row.project, category: row.category, macro: row.macro, micro: mic, location: locStr }); }
+                    });
+                }
+            });
+        }
+
+        function setOpts(id, arr, defaultTxt) {
+            let el = document.getElementById(id);
+            el.innerHTML = `<option value="">${defaultTxt}</option>` + arr.map(x => `<option value="${x}">${x}</option>`).join('');
+            el.disabled = arr.length === 0 && defaultTxt.indexOf('可留空') === -1 && defaultTxt.indexOf('顯示所有階段') === -1; 
+        }
+
+        // ================= Table 1 (字典檔) =================
+        function initBaseDropdowns() {
+            let projects = [...new Set(mainCombos.map(c => c.project))].sort();
+            setOpts('b_project', projects, '-- 選專案 --');
+        }
+        function updateBaseMacro() {
+            let p = document.getElementById('b_project').value;
+            let macs = p ? [...new Set(mainCombos.filter(c => c.project === p).map(c => c.macro))].sort() : [];
+            setOpts('b_macro', macs, '-- 選大製程 --'); setOpts('b_micro', [], '-- 先選大製程 --');
+        }
+        function updateBaseMicro() {
+            let p = document.getElementById('b_project').value; let m = document.getElementById('b_macro').value;
+            let mics = m ? [...new Set(mainCombos.filter(c => c.project===p && c.macro===m).map(c => c.micro))].sort() : [];
+            setOpts('b_micro', mics, '-- 選小製程 --');
+        }
+        function addBase() {
+            let project = document.getElementById('b_project').value; let macro = document.getElementById('b_macro').value;
+            let micro = document.getElementById('b_micro').value; let station = document.getElementById('b_station').value.trim();
+            if(!project || !macro || !micro || !station) return alert("四個欄位皆為必填！");
+            
+            let existing = baseDb.filter(b => b.project===project && b.macro===macro && b.micro===micro);
+            let maxOrder = existing.length > 0 ? Math.max(...existing.map(e => e.orderIdx || 0)) : Date.now();
+            
+            baseDb.push({ id: 'B_'+Date.now(), project, macro, micro, station, orderIdx: maxOrder + 1000 });
+            localStorage.setItem('eqBaseDbV19', JSON.stringify(baseDb));
+            document.getElementById('b_station').value = ''; document.getElementById('b_station').focus(); renderTable1();
+        }
+        function delBase(id) {
+            if(confirm("刪除標準站別不會影響已經倒出的實體線體。確定刪除嗎？")) {
+                baseDb = baseDb.filter(x => x.id !== id); localStorage.setItem('eqBaseDbV19', JSON.stringify(baseDb)); renderTable1(); 
+            }
+        }
+        
+        function moveStation(type, refId, lineKey, direction) {
+            let siblings = [];
+            if(type === 'base') {
+                let [p, mac, mic] = lineKey.split('|');
+                siblings = baseDb.filter(b => b.project===p && b.macro===mac && b.micro===mic).sort((a,b)=>a.orderIdx - b.orderIdx);
+            } else {
+                let [r, p, c, mac, mic, loc, lid, ph] = lineKey.split('|');
+                siblings = deployDb.filter(v => v.region===r && v.project===p && v.category===c && v.macro===mac && v.micro===mic && v.location===loc && (v.lineId||'標準線')===lid && v.phase===ph);
+                siblings.sort((a,b) => a.orderIdx - b.orderIdx);
+            }
+
+            let idx = siblings.findIndex(s => s.id === refId);
+            if(idx < 0) return;
+            let targetIdx = idx + direction;
+            if(targetIdx < 0 || targetIdx >= siblings.length) return;
+
+            let temp = siblings[idx].orderIdx;
+            siblings[idx].orderIdx = siblings[targetIdx].orderIdx;
+            siblings[targetIdx].orderIdx = temp;
+
+            if(type === 'base') {
+                localStorage.setItem('eqBaseDbV19', JSON.stringify(baseDb)); renderTable1();
+            } else {
+                localStorage.setItem('eqDeployDbV19', JSON.stringify(deployDb)); renderTable2();
+            }
+        }
+
+        function renderTable1() {
+            let tbody = document.getElementById('baseTbody'); tbody.innerHTML = '';
+            let p = document.getElementById('b_project').value; let mac = document.getElementById('b_macro').value;
+            let mic = document.getElementById('b_micro').value; let st = document.getElementById('b_station').value.trim().toLowerCase();
+
+            let filtered = baseDb.filter(b => {
+                if (p && b.project !== p) return false; if (mac && b.macro !== mac) return false;
+                if (mic && b.micro !== mic) return false; if (st && !b.station.toLowerCase().includes(st)) return false;
+                return true;
+            });
+            if(filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:20px;">尚無符合的標準站別資料</td></tr>`; return; }
+
+            let gCounts = {};
+            filtered.forEach(b => { let k = `${b.project}|${b.macro}|${b.micro}`; gCounts[k] = (gCounts[k] || 0) + 1; });
+
+            let renderedGroups = {};
+            filtered.sort((a,b) => a.project.localeCompare(b.project) || a.macro.localeCompare(b.macro) || a.micro.localeCompare(b.micro) || a.orderIdx - b.orderIdx).forEach(b => {
+                let k = `${b.project}|${b.macro}|${b.micro}`;
+                let tr = `<tr>`;
+                
+                if (!renderedGroups[k]) {
+                    let span = gCounts[k]; renderedGroups[k] = true;
+                    tr += `<td rowspan="${span}" style="background-color:#fff; border-bottom:2px solid #cbd5e1; vertical-align:middle;"><span class="tag-proj">${b.project}</span></td>
+                           <td rowspan="${span}" style="background-color:#fff; border-bottom:2px solid #cbd5e1; vertical-align:middle;"><span class="tag-proc">${b.macro} ➔ ${b.micro}</span></td>`;
+                }
+
+                gCounts[k]--;
+                let borderStyle = gCounts[k] === 0 ? 'border-bottom:2px solid #cbd5e1;' : '';
+
+                tr += `<td style="font-weight:bold; color:#0288d1; font-size:14px; ${borderStyle}">${b.station}</td>
+                       <td style="text-align:center; ${borderStyle}">
+                           <button class="btn-icon" onclick="moveStation('base', '${b.id}', '${k}', -1)" title="上移">▲</button>
+                           <button class="btn-icon" onclick="moveStation('base', '${b.id}', '${k}', 1)" title="下移">▼</button>
+                           <button class="btn-danger" style="margin-left:6px;" onclick="delBase('${b.id}')">✖</button>
+                       </td></tr>`;
+                
+                tbody.innerHTML += tr;
+            });
+        }
+
+        // ================= Table 2 =================
+        function initVarDropdowns() {
+            let filterKw = document.getElementById('v_rp_filter').value.toLowerCase();
+            let rps = [...new Set(mainCombos.map(c => `${c.region}|${c.project}`))].sort();
+            if (filterKw) { rps = rps.filter(x => x.toLowerCase().includes(filterKw)); }
+
+            let el = document.getElementById('v_rp'); let currentVal = el.value; 
+            el.innerHTML = `<option value="">-- [主頁組合] 地區 ➔ 專案 --</option>` + rps.map(x => { let [r, p] = x.split('|'); return `<option value="${x}">🌍 ${r} - 📦 ${p}</option>`; }).join('');
+            if(rps.includes(currentVal)) { el.value = currentVal; } else { el.value = ""; updVarCategoryAndMacro(); }
+        }
+
+        function updVarCategoryAndMacro() {
+            let rp = document.getElementById('v_rp').value;
+            let category = document.getElementById('v_category').value; 
+            ['v_phase', 'v_macro', 'v_micro', 'v_location'].forEach(id => {
+                let el = document.getElementById(id); el.innerHTML = `<option value="">-- 先選上層 --</option>`; el.disabled = true;
+            });
+            if(!rp) return;
+            let [r, p] = rp.split('|');
+
+            if(category) {
+                updVarPhase();
+                let macs = [...new Set(mainCombos.filter(x => x.region===r && x.project===p && x.category===category).map(x => x.macro))].sort();
+                setOpts('v_macro', macs, '-- 選大製程 --');
+            } else { updVarPhase(); }
+        }
+
+        function updVarPhase() {
+            let rp = document.getElementById('v_rp').value; let category = document.getElementById('v_category').value;
+            if(!rp) return; let [r, p] = rp.split('|');
+            let phases = [];
+            if (category) phases = [...new Set(milestonesDb.filter(m => m.region===r && m.project===p && m.category===category).map(m => m.phase))];
+            else phases = [...new Set(milestonesDb.filter(m => m.region===r && m.project===p).map(m => m.phase))];
+
+            if(phases.length === 0) phases = ["常規階段"];
+            setOpts('v_phase', phases, '-- 顯示所有階段 (全覽) --');
+            document.getElementById('v_phase').disabled = false;
+
+            if(category) {
+                let macs = [...new Set(mainCombos.filter(x => x.region===r && x.project===p && x.category===category).map(x => x.macro))].sort();
+                setOpts('v_macro', macs, '-- 選大製程 --');
+            } else {
+                let macEl = document.getElementById('v_macro'); macEl.innerHTML = `<option value="">-- 先選類別 --</option>`; macEl.disabled = true;
+            }
+        }
+
+        function updVarMicro() {
+            let rp = document.getElementById('v_rp').value; let category = document.getElementById('v_category').value; let mac = document.getElementById('v_macro').value;
+            if(!rp || !category || !mac) return; let [r, p] = rp.split('|');
+            let mics = [...new Set(mainCombos.filter(x => x.region===r && x.project===p && x.category===category && x.macro===mac).map(x => x.micro))].sort();
+            setOpts('v_micro', mics, '-- 選小製程 --');
+            let locEl = document.getElementById('v_location'); locEl.innerHTML = `<option value="">-- 先選上層 --</option>`; locEl.disabled = true;
+        }
+
+        function updVarLoc() {
+            let rp = document.getElementById('v_rp').value; let category = document.getElementById('v_category').value; let mac = document.getElementById('v_macro').value; let mic = document.getElementById('v_micro').value;
+            if(!rp || !category || !mac || !mic) return; let [r, p] = rp.split('|');
+            let locs = [...new Set(mainCombos.filter(x => x.region===r && x.project===p && x.category===category && x.macro===mac && x.micro===mic).map(x => x.location))].sort();
+            
+            locs = locs.filter(l => l !== "未指定位置" && l !== "");
+            setOpts('v_location', locs, '-- 選位置 (可留空待定) --');
+            document.getElementById('v_location').disabled = false; 
+        }
+
+        function deployPhysicalLine() {
+            let rp = document.getElementById('v_rp').value; let category = document.getElementById('v_category').value;
+            let phase = document.getElementById('v_phase').value; let macro = document.getElementById('v_macro').value;
+            let micro = document.getElementById('v_micro').value; 
+            let location = document.getElementById('v_location').value || '未指定位置';
+            let lineId = document.getElementById('v_line_id').value.trim() || '標準線';
+
+            if(!rp || !category || !phase || !macro || !micro) return alert("初次建線，請完整選擇左側「包含階段」的環境條件！");
+            let [region, project] = rp.split('|');
+            
+            let standardStations = baseDb.filter(b => b.project === project && b.macro === macro && b.micro === micro);
+            if (standardStations.length === 0) return alert(`⚠️ 在 Table 1 中找不到該製程的標準站別。請先建立基本盤。`);
+            
+            let newAddedCount = 0;
+            standardStations.forEach(st => {
+                let exists = deployDb.find(v => v.region===region && v.project===project && v.category===category && v.phase===phase && v.macro===macro && v.micro===micro && v.location===location && v.lineId===lineId && v.station===st.station);
+                if (!exists) {
+                    deployDb.push({ id: 'D_'+Date.now()+'_'+Math.floor(Math.random()*1000), region, project, category, phase, macro, micro, location, lineId, station: st.station, qpl: 1, vendor: "", orderIdx: st.orderIdx || Date.now() });
+                    newAddedCount++;
+                }
+            });
+
+            if (newAddedCount > 0) { localStorage.setItem('eqDeployDbV19', JSON.stringify(deployDb)); renderTable2(); } 
+            else { alert(`此階段的「${lineId}」已經配置過這些站別了！`); }
+        }
+
+        function updateDeployInline(id, field, val) {
+            let record = deployDb.find(x => x.id === id);
+            if (record) {
+                if (field === 'qpl') { let num = parseFloat(val); record.qpl = isNaN(num) || num <= 0 ? 1 : num; } 
+                else if (field === 'station') { record.station = val.trim() || '未命名站別'; }
+                else { record.vendor = val.trim(); }
+                localStorage.setItem('eqDeployDbV19', JSON.stringify(deployDb));
+            }
+        }
+
+        function delDeploy(id) { deployDb = deployDb.filter(x => x.id !== id); localStorage.setItem('eqDeployDbV19', JSON.stringify(deployDb)); renderTable2(); }
+
+        function addSingleStation(lineKey, phase) {
+            let [region, project, category, macro, micro, location, lineId] = lineKey.split('|');
+            let existing = deployDb.filter(v => v.region===region && v.project===project && v.category===category && v.macro===macro && v.micro===micro && v.location===location && (v.lineId||'標準線')===lineId && v.phase===phase);
+            let maxOrder = existing.length > 0 ? Math.max(...existing.map(e => e.orderIdx || 0)) : Date.now();
+
+            deployDb.push({
+                id: 'D_'+Date.now()+'_'+Math.floor(Math.random()*1000), 
+                region, project, category, phase, macro, micro, location, lineId: lineId,
+                station: "新站別", qpl: 1, vendor: "", orderIdx: maxOrder + 1000
+            });
+            localStorage.setItem('eqDeployDbV19', JSON.stringify(deployDb));
+            renderTable2();
+        }
+
+        function openBatchMoveModal(dataStr) {
+            let d = JSON.parse(decodeURIComponent(dataStr));
+            document.getElementById('bm_data').value = decodeURIComponent(dataStr);
+            document.getElementById('bm_subtitle').innerHTML = `
+                <div style="margin-bottom:4px;"><b>目標線體：</b> ${d.r} - ${d.p} (${d.c})</div>
+                <div style="margin-bottom:4px;"><b>製程節點：</b> ${d.mac} ➔ ${d.mic}</div>
+                <div><b>目前位置：</b> <span style="color:#ef4444; font-weight:bold;">🏢 ${d.loc}</span> &nbsp;|&nbsp; <b>線體：</b> <span style="color:#b45309; font-weight:bold;">🏷️ ${d.lid}</span></div>`;
+            
+            let locs = [...new Set(mainCombos.filter(x => x.region === d.r && x.project === d.p && x.category === d.c && x.macro === d.mac && x.micro === d.mic).map(x => x.location))].sort();
+            locs = locs.filter(l => l !== "未指定位置" && l !== ""); locs.unshift("未指定位置"); 
+            let locEl = document.getElementById('bm_new_location');
+            locEl.innerHTML = `<option value="">-- 🔽 請選擇目標新樓層 / 位置 --</option>` + locs.map(x => `<option value="${x}">${x}</option>`).join('');
+            document.getElementById('bm_new_line_id').value = d.lid;
+            document.getElementById('batchMoveModal').style.display = 'block';
+        }
+
+        function executeBatchMove() {
+            let newLoc = document.getElementById('bm_new_location').value;
+            let newLineId = document.getElementById('bm_new_line_id').value.trim() || '標準線';
+            if(!newLoc) return alert("請選擇新位置！");
+            let d = JSON.parse(document.getElementById('bm_data').value);
+            if(newLoc === d.loc && newLineId === d.lid) return alert("位置與線體代號皆未更改，無需執行！");
+
+            let moveCount = 0;
+            deployDb.forEach(v => {
+                if(v.region === d.r && v.project === d.p && v.category === d.c && v.macro === d.mac && v.micro === d.mic && v.location === d.loc && v.lineId === d.lid) {
+                    v.location = newLoc; v.lineId = newLineId; moveCount++;
+                }
+            });
+            if(moveCount > 0) localStorage.setItem('eqDeployDbV19', JSON.stringify(deployDb));
+            closeModal('batchMoveModal'); renderTable2();
+        }
+
+        function openCloneLineModal(dataStr) {
+            let d = JSON.parse(decodeURIComponent(dataStr));
+            document.getElementById('cl_data').value = decodeURIComponent(dataStr);
+            document.getElementById('cl_subtitle').innerHTML = `
+                <div style="margin-bottom:4px;"><b>來源線體：</b> ${d.r} - ${d.p} (${d.c})</div>
+                <div style="margin-bottom:4px;"><b>來源製程：</b> ${d.mac} ➔ ${d.mic}</div>
+                <div><b>環境：</b> 🏢 ${d.loc} &nbsp;|&nbsp; 🏷️ ${d.lid}</div>`;
+
+            let recs = deployDb.filter(v => v.region === d.r && v.project === d.p && v.category === d.c && v.macro === d.mac && v.micro === d.mic && v.location === d.loc && (v.lineId||'標準線') === d.lid);
+            let existingPhases = [...new Set(recs.map(v => v.phase))];
+            
+            let spEl = document.getElementById('cl_source_phase');
+            spEl.innerHTML = existingPhases.map(x => `<option value="${x}">${x}</option>`).join('');
+
+            let catEl = document.getElementById('cl_new_category');
+            catEl.value = d.c;
+            window.updClonePhase();
+
+            let locs = [...new Set(mainCombos.filter(x => x.region === d.r && x.project === d.p).map(x => x.location))].sort();
+            locs = locs.filter(l => l !== "未指定位置" && l !== ""); locs.unshift("未指定位置");
+            let locEl = document.getElementById('cl_new_location');
+            locEl.innerHTML = `<option value="">-- 沿用原位置 (${d.loc}) --</option>` + locs.map(x => `<option value="${x}">${x}</option>`).join('');
+
+            document.getElementById('cl_new_line_id').value = d.lid;
+            document.getElementById('cl_reset_vendor').checked = false;
+            document.getElementById('cloneLineModal').style.display = 'block';
+        }
+
+        window.updClonePhase = function() {
+            let d = JSON.parse(document.getElementById('cl_data').value);
+            let selCat = document.getElementById('cl_new_category').value;
+            let srcPhase = document.getElementById('cl_source_phase').value;
+            
+            let projMilestones = milestonesDb.filter(m => m.region===d.r && m.project===d.p && m.category===selCat);
+            let allPhases = [...new Set(projMilestones.map(m => m.phase))];
+            
+            if (selCat === d.c && srcPhase) {
+                let srcMs = milestonesDb.find(m => m.region===d.r && m.project===d.p && m.category===d.c && m.phase===srcPhase);
+                if (srcMs && srcMs.start) {
+                    let srcTime = new Date(srcMs.start).getTime();
+                    allPhases = allPhases.filter(ph => {
+                        if (ph === srcPhase) return false; 
+                        let phMs = projMilestones.find(m => m.phase === ph);
+                        if (phMs && phMs.start) { return new Date(phMs.start).getTime() >= srcTime; }
+                        return true; 
+                    });
+                } else {
+                    allPhases = allPhases.filter(ph => ph !== srcPhase);
+                }
+            }
+
+            let tpEl = document.getElementById('cl_new_phase');
+            if(allPhases.length === 0) {
+                tpEl.innerHTML = `<option value="">-- 無後續階段可升級 --</option>`;
+                tpEl.disabled = true;
+            } else {
+                tpEl.innerHTML = `<option value="">-- 請選擇目標新階段 --</option>` + allPhases.map(x => `<option value="${x}">${x}</option>`).join('');
+                tpEl.disabled = false;
+            }
+        };
+
+        function executeCloneLine() {
+            let d = JSON.parse(document.getElementById('cl_data').value);
+            let srcPhase = document.getElementById('cl_source_phase').value;
+            let targetCategory = document.getElementById('cl_new_category').value;
+            let targetPhase = document.getElementById('cl_new_phase').value;
+            let targetLoc = document.getElementById('cl_new_location').value || d.loc;
+            let targetLineId = document.getElementById('cl_new_line_id').value.trim() || d.lid;
+            let resetVendor = document.getElementById('cl_reset_vendor').checked;
+
+            if(!targetPhase) return alert("請選擇目標新階段！");
+            if(d.c === targetCategory && srcPhase === targetPhase && targetLoc === d.loc && targetLineId === d.lid) {
+                return alert("目標環境與來源完全相同，無法複製！請改變類別、階段、位置或線體代號。");
+            }
+
+            let copyCount = 0; let newRecords = [];
+            deployDb.forEach(v => {
+                if(v.region === d.r && v.project === d.p && v.category === d.c && v.phase === srcPhase && v.macro === d.mac && v.micro === d.mic && v.location === d.loc && v.lineId === d.lid) {
+                    
+                    let exists = deployDb.find(ex => ex.region === d.r && ex.project === d.p && ex.category === targetCategory && ex.phase === targetPhase && ex.macro === d.mac && ex.micro === d.mic && ex.location === targetLoc && ex.lineId === targetLineId && ex.station === v.station);
+                    
+                    if(!exists) {
+                        let newRec = JSON.parse(JSON.stringify(v));
+                        newRec.id = 'D_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+                        newRec.category = targetCategory; 
+                        newRec.phase = targetPhase;
+                        newRec.location = targetLoc;
+                        newRec.lineId = targetLineId;
+                        if (resetVendor) newRec.vendor = ""; 
+                        newRecords.push(newRec);
+                        copyCount++;
+                    }
+                }
+            });
+
+            if(copyCount > 0) {
+                deployDb.push(...newRecords); localStorage.setItem('eqDeployDbV19', JSON.stringify(deployDb));
+                let globalCatEl = document.getElementById('v_category');
+                if(globalCatEl && globalCatEl.value !== targetCategory) { globalCatEl.value = targetCategory; updVarPhase(); }
+                renderTable2();
+            }
+            closeModal('cloneLineModal');
+            alert(`✅ 升級成功！已將 ${srcPhase} 階段的卡片，跨類別複製到 [${targetCategory}] 的 ${targetPhase} 階段。`);
+        }
+
+        // ================= 🌟 T2 渲染 (局部獨立 Kanban) =================
+        function renderTable2() {
+            let tbody = document.getElementById('variantTbody'); 
+            let kw = document.getElementById('flt_keyword').value.toLowerCase();
+            
+            let rp = document.getElementById('v_rp').value;
+            let [r, p] = rp ? rp.split('|') : ["", ""];
+            let category = document.getElementById('v_category').value;
+            let phaseFilter = document.getElementById('v_phase').value;
+            let macro = document.getElementById('v_macro').value;
+            let micro = document.getElementById('v_micro').value;
+            let location = document.getElementById('v_location').value;
+            let lineId = document.getElementById('v_line_id').value.trim().toLowerCase();
+
+            let filtered = deployDb.filter(v => {
+                if (r && v.region !== r) return false;
+                if (p && v.project !== p) return false;
+                if (category && v.category !== category) return false;
+                if (phaseFilter && v.phase !== phaseFilter) return false;
+                if (macro && v.macro !== macro) return false;
+                if (micro && v.micro !== micro) return false;
+                if (location && v.location !== location) return false;
+                if (lineId && (v.lineId || '標準線').toLowerCase() !== lineId) return false;
+                if (kw && !`${v.location} ${v.lineId||'標準線'} ${v.station} ${v.vendor}`.toLowerCase().includes(kw)) return false;
+                return true;
+            });
+
+            if(filtered.length === 0) { 
+                tbody.innerHTML = `<tr><td style="text-align:center; color:#94a3b8; padding:30px;">無符合條件的配置紀錄</td></tr>`; 
+                return; 
+            }
+
+            // 分組 (Pivot by Line -> Phases)
+            let lines = {};
+            filtered.forEach(v => {
+                let lid = v.lineId || '標準線';
+                let lKey = `${v.region}|${v.project}|${v.category}|${v.macro}|${v.micro}|${v.location}|${lid}`;
+                if(!lines[lKey]) lines[lKey] = { props: v, phases: {} };
+                if(!lines[lKey].phases[v.phase]) lines[lKey].phases[v.phase] = [];
+                lines[lKey].phases[v.phase].push(v);
+            });
+
+            tbody.innerHTML = '';
+
+            Object.keys(lines).sort().forEach(lKey => {
+                let line = lines[lKey];
+                let v = line.props;
+                let lid = v.lineId || '標準線';
+                let safeData = encodeURIComponent(JSON.stringify({ r: v.region, p: v.project, c: v.category, mac: v.macro, mic: v.micro, loc: v.location, lid: lid }));
+
+                let trHtml = `<tr>
+                    <td class="col-info" style="border-bottom:2px solid #cbd5e1; vertical-align: top; padding: 15px;">
+                        <div style="font-size:12px; color:#64748b; margin-bottom:6px;">🌍 ${v.region} &nbsp;|&nbsp; 📦 ${v.project} <span style="color:#0288d1;">(${v.category})</span></div>
+                        <div style="margin-bottom:10px;"><span class="tag-proc" style="font-size:13px; padding:4px 8px;">${v.macro} ➔ ${v.micro}</span></div>
+                        <div style="display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+                            <span class="tag-loc-clickable" onclick="openBatchMoveModal('${safeData}')" title="點擊整批修改位置" style="font-size:12px; padding:6px 10px;">🏢 ${v.location} ✏️</span>
+                        </div>
+                        <div style="margin-bottom:15px;"><div class="tag-line" style="font-size:13px; padding:4px 8px;">🏷️ ${lid}</div></div>
+                        <button class="clone-badge" onclick="openCloneLineModal('${safeData}')" title="跨階段/跨部門完美移交產線設定">🚀 階段升級(移交)</button>
+                    </td>
+                    <td style="background-color:#f8fafc; border-bottom:2px solid #cbd5e1; vertical-align: top; padding: 15px;">
+                        <div style="display: flex; gap: 20px; align-items: flex-start;">
+                `;
+
+                // 💡 局部決定的階段欄位：只顯示這條線擁有的階段，以及它能擴充的 milestones
+                let linePhases = [];
+                if (phaseFilter) { linePhases = [phaseFilter]; } 
+                else {
+                    linePhases = [...new Set(Object.keys(line.phases))];
+                    let projMilestones = milestonesDb.filter(m => m.region === v.region && m.project === v.project && m.category === v.category);
+                    projMilestones.forEach(m => { if (!linePhases.includes(m.phase)) linePhases.push(m.phase); });
+                    
+                    let pMap = {}; milestonesDb.forEach(m => pMap[m.phase] = new Date(m.start).getTime());
+                    linePhases.sort((a,b) => (pMap[a] || 9999999999999) - (pMap[b] || 9999999999999));
+                }
+
+                linePhases.forEach(ph => {
+                    trHtml += `
+                        <div style="min-width: 290px; width: 290px; background: #fff; border: 2px solid #e2e8f0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; flex-shrink: 0;">
+                            <div style="background: #fef08a; padding: 8px 12px; font-weight: 900; color: #b45309; border-bottom: 2px solid #fde047; display: flex; justify-content: space-between; align-items: center; border-radius: 6px 6px 0 0;">
+                                <span style="font-size: 14px; letter-spacing: 1px;">📌 階段：${ph}</span>
+                            </div>
+                            <div style="padding: 10px; display: flex; flex-direction: column; gap: 6px; background: #f8fafc; border-radius: 0 0 8px 8px; min-height: 60px;">
+                    `;
+
+                    let phaseStations = line.phases[ph] || [];
+                    phaseStations.sort((a,b) => a.orderIdx - b.orderIdx).forEach(st => {
+                        // 🌟 核心：極致濃縮的單行卡片 (完美復刻圖片需求)
+                        trHtml += `
+                            <div class="station-card">
+                                <div style="display: flex; flex-direction: column; gap: 2px; padding-right: 4px; border-right: 1px dashed #e2e8f0;">
+                                    <button class="btn-icon" style="padding: 2px 4px; font-size: 9px;" onclick="moveStation('deploy', '${st.id}', '${lKey}|${ph}', -1)">▲</button>
+                                    <button class="btn-icon" style="padding: 2px 4px; font-size: 9px;" onclick="moveStation('deploy', '${st.id}', '${lKey}|${ph}', 1)">▼</button>
+                                </div>
+                                <input type="text" class="inline-input" style="width: 80px; color: #0f172a; border: 1px solid #cbd5e1; padding: 4px;" value="${st.station}" maxlength="12" placeholder="站別名稱" onchange="updateDeployInline('${st.id}', 'station', this.value)">
+                                <input type="number" class="inline-input" style="width: 45px; text-align: center; color: #d84315; border: 1px solid #ffb74d; background: #fff8e1; padding: 4px;" value="${st.qpl}" step="0.1" onchange="updateDeployInline('${st.id}', 'qpl', this.value)">
+                                <input type="text" class="inline-input" style="width: 80px; color: #00695c; border: 1px solid #b2dfdb; background: #e0f2f1; padding: 4px;" value="${st.vendor}" maxlength="12" placeholder="廠商" onchange="updateDeployInline('${st.id}', 'vendor', this.value)">
+                                <button class="btn-danger" style="padding: 4px 6px; font-size: 11px; background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;" onclick="delDeploy('${st.id}')">✖</button>
+                            </div>
+                        `;
+                    });
+
+                    trHtml += `
+                                <button class="btn-add" style="width:100%; background:transparent; color:#94a3b8; border:1px dashed #cbd5e1; box-shadow:none; padding:4px; margin-top:2px;" onclick="addSingleStation('${lKey}', '${ph}')" onmouseover="this.style.borderColor='#94a3b8'; this.style.color='#475569'" onmouseout="this.style.borderColor='#cbd5e1'; this.style.color='#94a3b8'">
+                                    ➕ 加入新站別
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                trHtml += `</div></td></tr>`;
+                tbody.innerHTML += trHtml;
+            });
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
